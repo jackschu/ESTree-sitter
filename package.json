@@ -1,0 +1,15 @@
+{
+  "name": "estree-sitter",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "jackschu",
+  "license": "MIT",
+  "devDependencies": {
+    "acorn": "^8.11.3",
+    "jest": "^29.7.0"
+  }
+}
