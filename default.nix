@@ -17,16 +17,6 @@
       ;
   };
 
-  nodejs-granular-v3 = {
-    buildScript = ''
-      mv index.js app.js.tmp
-      echo "#!${config.deps.nodejs}/bin/node" > app.js
-      cat app.js.tmp >> app.js
-      chmod +x ./app.js
-      patchShebangs .
-    '';
-  };
-
   name = lib.mkForce "estree-sitter";
   version = lib.mkForce "0.1.0";
 

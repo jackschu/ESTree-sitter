@@ -13,11 +13,8 @@
     ...
   }: let
     system = "x86_64-linux";
+    pkgs = import nixpkgs { inherit system; };
     
-
-  in rec {
-    # All packages defined in ./packages/<name> are automatically added to the flake outputs
-    # e.g., 'packages/hello/default.nix' becomes '.#packages.hello'
     dream_eval = dream2nix.lib.evalModules {
       packageSets.nixpkgs = inputs.dream2nix.inputs.nixpkgs.legacyPackages.${system};
       modules = [
@@ -30,11 +27,24 @@
         }
       ];
     };
-    packages.${system}.default = dream_eval;
-    apps.${system}.default = {
-      type = "app";
-      program = "${dream_eval}/lib/node_modules/estree-sitter/app.js";
+
+
+  in rec {
+    shellScript = pkgs.writeShellApplication {
+      name = "estreesit";
+
+      runtimeInputs = [ pkgs.nodejs ];
+
+      text = ''
+          cd ${dream_eval}/lib/node_modules/estree-sitter
+          ${pkgs.nodejs}/bin/node index.js
+        '';
     };
-    
+    # All packages defined in ./packages/<name> are automatically added to the flake outputs
+    # e.g., 'packages/hello/default.nix' becomes '.#packages.hello'
+    packages.${system} = {
+      default = shellScript;
+      dream = dream_eval;
+    };
   };
 }
