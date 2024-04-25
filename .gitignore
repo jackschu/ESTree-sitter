@@ -122,3 +122,6 @@ flycheck_*.el
 # creds
 
 credentials/
+
+result
+result/
