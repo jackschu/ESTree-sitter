@@ -24,7 +24,24 @@
           }
         ];
       };
-    in rec {
+      jest-check = pkgs.stdenv.mkDerivation {
+        name = "jest-check";
+        src = dream_eval;
+        doCheck = true;
+        checkPhase = ''
+        # gotta do this or else we'll be in node_modules path
+        # and that'll confuse some of jest's regexs
+        TEST_DIR=$(mktemp -d)
+        cp -r ./lib/node_modules/estree-sitter $TEST_DIR
+        cd $TEST_DIR/estree-sitter
+
+        NODE_OPTIONS="--experimental-vm-modules" ${dream_eval}/lib/node_modules/estree-sitter/node_modules/jest/bin/jest.js
+      '';
+        installPhase = ''
+          mkdir "$out"
+        '';
+      };
+    in {
       # All packages defined in ./packages/<name> are automatically added to the flake outputs
       # e.g., 'packages/hello/default.nix' becomes '.#packages.hello'
       packages.${system} = {
@@ -49,5 +66,6 @@
         type = "app";
         program = "${jest-esm}/bin/checks-with-env";
       };
+      checks.x86_64-linux = {inherit jest-check;};
     };
 }
