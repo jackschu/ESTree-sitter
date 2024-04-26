@@ -11,16 +11,19 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
 
+      fs = pkgs.lib.fileset;
+
+      non_node_packages = pkgs.lib.cleanSource ./.;
       dream_eval = dream2nix.lib.evalModules {
         packageSets.nixpkgs =
           inputs.dream2nix.inputs.nixpkgs.legacyPackages.${system};
         modules = [
           ./default.nix
           {
-            paths.projectRoot = ./.;
+            paths.projectRoot = non_node_packages;
             # can be changed to ".git" or "flake.nix" to get rid of .project-root
             paths.projectRootFile = "flake.nix";
-            paths.package = ./.;
+            paths.package = non_node_packages;
           }
         ];
       };
@@ -34,6 +37,7 @@
         TEST_DIR=$(mktemp -d)
         cp -r ./lib/node_modules/estree-sitter $TEST_DIR
         cd $TEST_DIR/estree-sitter
+        cp -r ${non_node_packages}/* ./
 
         NODE_OPTIONS="--experimental-vm-modules" ${dream_eval}/lib/node_modules/estree-sitter/node_modules/jest/bin/jest.js
       '';
@@ -51,8 +55,11 @@
           runtimeInputs = [ pkgs.nodejs ];
 
           text = ''
-            cd ${dream_eval}/lib/node_modules/estree-sitter
-            ${pkgs.nodejs}/bin/node src/index.js
+          TMP_DIR=$(mktemp -d)
+          cp -r ${dream_eval}/lib/node_modules/estree-sitter/node_modules "$TMP_DIR"
+          cp -r ${non_node_packages}/* "$TMP_DIR"
+          cd "$TMP_DIR"
+          ${pkgs.nodejs}/bin/node src/index.js
           '';
         };
         dream = dream_eval;

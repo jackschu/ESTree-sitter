@@ -20,8 +20,15 @@
   name = lib.mkForce "estree-sitter";
   version = lib.mkForce "0.1.0";
 
-  mkDerivation = {
-    src = lib.cleanSource ./.;
-    doCheck = true;
+  mkDerivation = let 
+    fs = lib.fileset;
+    dream_src = fs.unions [./flake.lock ./lock.json ./package.json];
+  in 
+    {
+      src = fs.toSource {
+        root = ./.;
+        fileset = dream_src;
+      };
+      doCheck = true;
   };
 }
