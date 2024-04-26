@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import fs from 'node:fs'
 import path from 'node:path'
 import url from 'node:url'
@@ -8,31 +9,35 @@ import { parse as acorn_parse } from './acorn_reference.js'
 
 const test_dir = path.dirname(url.fileURLToPath(import.meta.url))
 const corpus_dir = path.join(test_dir, 'corpus')
+//const corpus_dir = path.join(test_dir, 'ambition')
 
-const files = fs
-    .readdirSync(corpus_dir, { withFileTypes: true })
-    .flatMap((file) => {
-        const basename = file.name
-        const filename = path.join(corpus_dir, basename)
-        if (
-            path.extname(basename) === '.snap' ||
-            !file.isFile() ||
-            basename[0] === '.' ||
-            // VSCode creates this file sometime https://github.com/microsoft/vscode/issues/105191
-            basename === 'debug.log'
-        ) {
-            return []
-        }
+const dir = fs.readdirSync(corpus_dir, { withFileTypes: true })
 
-        const text = fs.readFileSync(filename, 'utf8')
-
-        return [
-            {
+const files = await Promise.all(
+    dir
+        .flatMap((file) => {
+            const basename = file.name
+            const filename = path.join(corpus_dir, basename)
+            if (
+                path.extname(basename) === '.snap' ||
+                !file.isFile() ||
+                basename[0] === '.' ||
+                // VSCode creates this file sometime https://github.com/microsoft/vscode/issues/105191
+                basename === 'debug.log'
+            ) {
+                return []
+            }
+            return [{ basename, filename }]
+        })
+        .map(({ basename, filename }) =>
+            readFile(filename, 'utf8').then((text) => ({
                 name: basename,
                 text,
-            },
-        ]
-    })
+            }))
+        )
+)
+
+console.log('finished reading')
 
 const ts_opts = {
     parser: 'tree-sitter',
@@ -46,7 +51,10 @@ const acorn_opts = {
     plugins: [
         {
             parsers: {
-                'custom-acorn': { parse: acorn_parse, astFormat: 'estree' },
+                'custom-acorn': {
+                    ...parsers['tree-sitter'],
+                    parse: acorn_parse,
+                },
             },
         },
     ],
@@ -67,11 +75,13 @@ describe('corpus test', () => {
             expect(ts_ast).toMatchObject(acorn_ast)
         })
         test(`Prettier match: ${name}`, async () => {
-            const formatted_ts = await prettier.format('lodash ( )', ts_opts)
-            const formatted_acorn = await prettier.format(
-                'lodash ( )',
-                acorn_opts
-            )
+            let formatted_ts
+            try {
+                formatted_ts = await prettier.format(text, ts_opts)
+            } catch (e) {
+                expect(e).toBe(undefined)
+            }
+            const formatted_acorn = await prettier.format(text, acorn_opts)
             expect(formatted_ts).toBe(formatted_acorn)
         })
     })

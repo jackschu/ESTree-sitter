@@ -10,10 +10,12 @@ const parser = new Parser()
 
 parser.setLanguage(JavaScript)
 
-const ts_comments = []
+let ts_comments = []
 
 /** @param {string} text */
 export const parse = (text) => {
+    ts_comments = []
+
     const sourceType = 'module'
 
     const comments = []
@@ -52,7 +54,7 @@ const traverse_tree = (cursor) => {
     let name = cursor.currentFieldName
     if (name == null) {
         name = cursor.nodeType
-        console.log('no field for node type', name)
+        //        console.log('no field for node type', name)
     }
     return [name, out]
 }
