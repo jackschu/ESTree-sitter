@@ -5,7 +5,6 @@ import url from 'node:url'
 const test_dir = path.dirname(url.fileURLToPath(import.meta.url))
 const corpus_dir = path.join(test_dir, 'corpus')
 
-console.log(corpus_dir)
 const files = fs
     .readdirSync(corpus_dir, { withFileTypes: true })
     .flatMap((file) => {

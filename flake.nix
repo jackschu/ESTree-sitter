@@ -52,12 +52,12 @@
 
           text = ''
             cd ${dream_eval}/lib/node_modules/estree-sitter
-            ${pkgs.nodejs}/bin/node index.js
+            ${pkgs.nodejs}/bin/node src/index.js
           '';
         };
         dream = dream_eval;
       };
-      apps.x86_64-linux.checks = let
+      apps.x86_64-linux.check = let
         jest-esm = pkgs.writeShellScriptBin "checks-with-env" ''
           export NODE_OPTIONS="--experimental-vm-modules"
           ${dream_eval}/lib/node_modules/estree-sitter/node_modules/jest/bin/jest.js "$@"
