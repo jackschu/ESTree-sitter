@@ -34,27 +34,45 @@ const files = fs
         ]
     })
 
-files.map((test_case) => {
-    test(test_case.name, () => {
-        expect(3).toBe(3)
-    })
+const ts_opts = {
+    parser: 'tree-sitter',
+    plugins: [{ parsers }],
+}
+
+const ts_parse = parsers['tree-sitter'].parse
+
+const acorn_opts = {
+    parser: 'custom-acorn',
+    plugins: [
+        {
+            parsers: {
+                'custom-acorn': { parse: acorn_parse, astFormat: 'estree' },
+            },
+        },
+    ],
+}
+
+test('smoke test', async () => {
+    const formatted_ts = await prettier.format('lodash ( )', ts_opts)
+    expect(formatted_ts).toBe('lodash();\n')
+    const formatted_acorn = await prettier.format('lodash ( )', acorn_opts)
+    expect(formatted_acorn).toBe('lodash();\n')
 })
 
-test('dummy parse', async () => {
-    const formatted_ts = await prettier.format('lodash ( )', {
-        parser: 'tree-sitter',
-        plugins: [{ parsers }],
+describe('corpus test', () => {
+    files.map(({ name, text }) => {
+        test(`AST match: ${name}`, async () => {
+            const ts_ast = ts_parse(text)
+            const acorn_ast = acorn_parse(text)
+            expect(ts_ast).toMatchObject(acorn_ast)
+        })
+        test(`Prettier match: ${name}`, async () => {
+            const formatted_ts = await prettier.format('lodash ( )', ts_opts)
+            const formatted_acorn = await prettier.format(
+                'lodash ( )',
+                acorn_opts
+            )
+            expect(formatted_ts).toBe(formatted_acorn)
+        })
     })
-    expect(formatted_ts).toBe('lodash();\n')
-    const formatted_acorn = await prettier.format('lodash ( )', {
-        parser: 'custom-acorn',
-        plugins: [
-            {
-                parsers: {
-                    'custom-acorn': { parse: acorn_parse, astFormat: 'estree' },
-                },
-            },
-        ],
-    })
-    expect(formatted_acorn).toBe('lodash();\n')
 })
