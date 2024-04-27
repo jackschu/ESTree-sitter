@@ -75,7 +75,7 @@ const pare_acorn_tree = (obj) =>
         JSON.stringify(obj, function (key, value) {
             if (this.type === 'Program' && key === 'sourceType')
                 return undefined
-            if (this.type === 'Literal' && ['regex', 'bigint'].includes(key))
+            if (this.type === 'Literal' && ['bigint'].includes(key))
                 return undefined
 
             return value
@@ -99,11 +99,12 @@ describe('corpus test', () => {
         test(`AST match: ${name}`, async () => {
             const ts_ast = ts_parse(text)
 
-            //console.log(JSON.stringify(ts_ast, null, 4))
+            const DEBUG = false
+            if (DEBUG) console.log(JSON.stringify(ts_ast, null, 4))
             let acorn_ast = acorn_parse(text)
             acorn_ast = pare_acorn_tree(acorn_ast)
-            //console.log('acorn_ast;')
-            //console.log(JSON.stringify(acorn_ast, null, 4))
+            if (DEBUG) console.log('acorn_ast;')
+            if (DEBUG) console.log(JSON.stringify(acorn_ast, null, 4))
             expect(ts_ast).toMatchObject(acorn_ast)
         })
         test(`Prettier match: ${name}`, async () => {

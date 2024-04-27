@@ -30,6 +30,7 @@ export const parse = (text) => {
 const type_mapping = new Map()
 type_mapping.set('binary_expression', 'LogicalExpression')
 type_mapping.set('number', 'Literal')
+type_mapping.set('regex', 'Literal')
 
 /** @param {Parser.TreeCursor} cursor */
 const traverse_tree = (cursor) => {
@@ -37,7 +38,7 @@ const traverse_tree = (cursor) => {
 
     let out
 
-    if (cursor.gotoFirstChild()) {
+    if (!useless_children.has(cursor.nodeText) && cursor.gotoFirstChild()) {
         do {
             let child_pair = traverse_tree(cursor)
             if (child_pair === null) {
@@ -57,6 +58,9 @@ const traverse_tree = (cursor) => {
     }
     return [name, out]
 }
+
+const useless_children = new Set()
+useless_children.add('regex')
 
 function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.slice(1)
@@ -119,6 +123,20 @@ const convert = (cursor, children) => {
 
             ts_comments.push(out)
             return null
+        }
+        case 'regex': {
+            const pattern =
+                cursor.currentNode.childForFieldName('pattern')?.text
+            const flag = cursor.currentNode.childForFieldName('flags')?.text
+
+            if (flag !== null) out.value = new RegExp(pattern, flag)
+            else out.value = new RegExp(pattern)
+            out.regex = {
+                pattern,
+                flags: flag ?? '',
+            }
+            out.raw = cursor.nodeText
+            return out
         }
         case 'number': {
             out.raw = cursor.nodeText
