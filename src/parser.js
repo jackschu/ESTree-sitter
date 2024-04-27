@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import Parser from 'web-tree-sitter'
+import { type_mapping, field_map } from './renames'
 
 await Parser.init()
 const JavaScript = await Parser.Language.load(
@@ -26,12 +27,6 @@ export const parse = (text) => {
 
     return out_obj
 }
-
-const type_mapping = new Map()
-type_mapping.set('statement_identifier', 'Identifier')
-type_mapping.set('binary_expression', 'LogicalExpression')
-type_mapping.set('number', 'Literal')
-type_mapping.set('regex', 'Literal')
 
 /** @param {Parser.TreeCursor} cursor */
 const traverse_tree = (cursor) => {
@@ -117,6 +112,43 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'statement_block': {
+            out.body = children
+                .filter((x) => x[0] !== '{' && x[0] !== '}')
+                .map((x) => x[1])
+            return out
+        }
+        case 'formal_parameters': {
+            out.children = children.filter(
+                (x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ','
+            )
+            return out
+        }
+        case 'arrow_function': {
+            const body = children.find((x) => x[0] === 'body')?.[1]
+            if (!body) throw new Error('arrow func with no body')
+            out.expression = body.type !== 'BlockStatement'
+
+            const parameter = children.find((x) => x[0] === 'parameter')?.[1]
+
+            if (parameter) {
+                out.params = [parameter]
+            } else {
+                const parameters = children.find(
+                    (x) => x[0] === 'parameters'
+                )?.[1]
+                if (!parameters) throw new Error('arrow func with no params')
+                const parameter_children = parameters.children
+                out.params = parameter_children.map((x) => x[1])
+            }
+
+            out.id = null
+            out.generator = false
+            out.async = children[0][1].nodeText === 'async'
+
+            out.body = body
+            return out
+        }
         case 'comment': {
             out.type = cursor.nodeText.startsWith('//') ? 'Line' : 'Block'
             if (out.type === 'Line') out.value = cursor.nodeText.slice(2)
@@ -195,9 +227,3 @@ const convert = (cursor, children) => {
         }
     }
 }
-
-const field_map = new Map()
-field_map.set('new_expression', 'expression')
-field_map.set('call_expression', 'expression')
-field_map.set('constructor', 'callee')
-field_map.set('function', 'callee')
