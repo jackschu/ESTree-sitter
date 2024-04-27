@@ -8,6 +8,7 @@ import { parsers } from '../src/index.js'
 import { parse as acorn_parse } from './acorn_reference.js'
 import { should_throw } from './throwers.js'
 
+const DEBUG = process.env.DEBUG ?? false
 const corpus_dirname = process.env.CORPUS ?? 'corpus'
 
 const test_dir = path.dirname(url.fileURLToPath(import.meta.url))
@@ -99,7 +100,6 @@ describe('corpus test', () => {
         test(`AST match: ${name}`, async () => {
             const ts_ast = ts_parse(text)
 
-            const DEBUG = false
             if (DEBUG) console.log(JSON.stringify(ts_ast, null, 4))
             let acorn_ast = acorn_parse(text)
             acorn_ast = pare_acorn_tree(acorn_ast)

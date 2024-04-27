@@ -28,6 +28,7 @@ export const parse = (text) => {
 }
 
 const type_mapping = new Map()
+type_mapping.set('statement_identifier', 'Identifier')
 type_mapping.set('binary_expression', 'LogicalExpression')
 type_mapping.set('number', 'Literal')
 type_mapping.set('regex', 'Literal')
@@ -152,6 +153,10 @@ const convert = (cursor, children) => {
                 out.value = parseInt(cursor.nodeText)
             }
 
+            return out
+        }
+        case 'statement_identifier': {
+            out.name = cursor.nodeText
             return out
         }
         case 'program': {
