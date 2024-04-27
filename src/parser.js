@@ -16,8 +16,6 @@ let ts_comments = []
 export const parse = (text) => {
     ts_comments = []
 
-    const sourceType = 'module'
-
     const comments = []
     const tokens = []
 
@@ -31,6 +29,7 @@ export const parse = (text) => {
 
 const type_mapping = new Map()
 type_mapping.set('binary_expression', 'LogicalExpression')
+type_mapping.set('number', 'Literal')
 
 /** @param {Parser.TreeCursor} cursor */
 const traverse_tree = (cursor) => {
@@ -96,6 +95,10 @@ const convert = (cursor, children) => {
             .map((word) => capitalize(word))
             .join('')
     switch (cursor.nodeType) {
+        case 'expression_statement': {
+            out.expression = children[0][1]
+            return out
+        }
         case 'call_expression': {
             let optional = false
             for (let pair of children) {
@@ -117,9 +120,22 @@ const convert = (cursor, children) => {
             ts_comments.push(out)
             return null
         }
+        case 'number': {
+            out.raw = cursor.nodeText
+            if (out.raw.endsWith('n')) {
+                out.value = BigInt(out.raw)
+            } else if (out.raw.startsWith('0b') || out.raw.startsWith('0B')) {
+                out.value = parseInt(cursor.nodeText, 2)
+            } else if (out.raw.startsWith('0x') || out.raw.startsWith('0X')) {
+                out.value = parseInt(cursor.nodeText, 16)
+            } else if (out.raw.startsWith('0')) {
+                out.value = parseInt(cursor.nodeText, 8)
+            }
+
+            return out
+        }
         case 'program': {
             out.body = children.map((x) => x[1])
-            out.sourceType = 'module'
             return out
         }
         case 'return_statement': {

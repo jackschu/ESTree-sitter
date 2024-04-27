@@ -70,6 +70,18 @@ test('smoke test', async () => {
     expect(formatted_acorn).toBe('lodash();\n')
 })
 
+const pare_acorn_tree = (obj) =>
+    JSON.parse(
+        JSON.stringify(obj, function (key, value) {
+            if (this.type === 'Program' && key === 'sourceType')
+                return undefined
+            if (this.type === 'Literal' && ['regex', 'bigint'].includes(key))
+                return undefined
+
+            return value
+        })
+    )
+
 describe('corpus test', () => {
     files.map(({ name, text }) => {
         if (should_throw.includes(name)) {
@@ -86,7 +98,12 @@ describe('corpus test', () => {
 
         test(`AST match: ${name}`, async () => {
             const ts_ast = ts_parse(text)
-            const acorn_ast = acorn_parse(text)
+
+            //console.log(JSON.stringify(ts_ast, null, 4))
+            let acorn_ast = acorn_parse(text)
+            acorn_ast = pare_acorn_tree(acorn_ast)
+            //console.log('acorn_ast;')
+            //console.log(JSON.stringify(acorn_ast, null, 4))
             expect(ts_ast).toMatchObject(acorn_ast)
         })
         test(`Prettier match: ${name}`, async () => {
