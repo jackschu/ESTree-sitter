@@ -6,9 +6,12 @@ import * as prettier from 'prettier'
 
 import { parsers } from '../src/index.js'
 import { parse as acorn_parse } from './acorn_reference.js'
+import { should_throw } from './throwers.js'
+
+const corpus_dirname = process.env.CORPUS ?? 'corpus'
 
 const test_dir = path.dirname(url.fileURLToPath(import.meta.url))
-const corpus_dir = path.join(test_dir, 'corpus')
+const corpus_dir = path.join(test_dir, corpus_dirname)
 //const corpus_dir = path.join(test_dir, 'ambition')
 
 const dir = fs.readdirSync(corpus_dir, { withFileTypes: true })
@@ -69,6 +72,18 @@ test('smoke test', async () => {
 
 describe('corpus test', () => {
     files.map(({ name, text }) => {
+        if (should_throw.includes(name)) {
+            test(`Should throw: ${name}`, async () => {
+                await expect(
+                    async () => await prettier.format(text, acorn_opts)
+                ).rejects.toThrow()
+                await expect(
+                    async () => await prettier.format(text, ts_opts)
+                ).rejects.toThrow()
+            })
+            return
+        }
+
         test(`AST match: ${name}`, async () => {
             const ts_ast = ts_parse(text)
             const acorn_ast = acorn_parse(text)

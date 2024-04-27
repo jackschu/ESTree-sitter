@@ -10,9 +10,7 @@ const acornParseOptions = {
     ranges: true,
 }
 
-export const parse = (text) => {
-    const sourceType = 'module'
-
+const parseImpl = (text, sourceType) => {
     const comments = []
 
     const acorn_ast = AcornParser.parse(text, {
@@ -24,4 +22,13 @@ export const parse = (text) => {
 
     acorn_ast.comments = comments
     return acorn_ast
+}
+
+export const parse = (text) => {
+    // terrible, but this seems to be what prettier does
+    try {
+        return parseImpl(text, 'module')
+    } catch (_e) {
+        return parseImpl(text, 'script')
+    }
 }
