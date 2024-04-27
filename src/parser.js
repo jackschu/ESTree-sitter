@@ -130,6 +130,8 @@ const convert = (cursor, children) => {
                 out.value = parseInt(cursor.nodeText, 16)
             } else if (out.raw.startsWith('0')) {
                 out.value = parseInt(cursor.nodeText, 8)
+            } else {
+                out.value = parseInt(cursor.nodeText)
             }
 
             return out
