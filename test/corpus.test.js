@@ -126,7 +126,7 @@ describe('corpus test', () => {
         const acorn_opts = replaced.options
         const ts_opts = { ...acorn_opts, ...base_ts_opts }
 
-        if (should_throw.includes(name)) {
+        if (should_throw.some((shorter_name) => name.includes(shorter_name))) {
             test(`Should throw: ${name}`, async () => {
                 await expect(
                     async () => await prettier.format(text, acorn_opts)
