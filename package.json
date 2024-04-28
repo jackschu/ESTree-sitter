@@ -11,6 +11,7 @@
   "license": "MIT",
   "devDependencies": {
     "acorn": "^8.11.3",
+    "acorn-jsx": "^5.3.2",
     "jest": "^29.7.0",
     "prettier": "^3.2.5"
   },

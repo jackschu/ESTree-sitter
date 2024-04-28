@@ -1,4 +1,5 @@
 import { Parser as AcornParser } from 'acorn'
+import acornJsx from 'acorn-jsx'
 
 const acornParseOptions = {
     ecmaVersion: 'latest',
@@ -10,10 +11,18 @@ const acornParseOptions = {
     ranges: true,
 }
 
+let parser
+const getParser = () => {
+    //parser ??= AcornParser.extend();
+    parser ??= AcornParser.extend(acornJsx())
+    //parser ??= AcornParser
+    return parser
+}
+
 const parseImpl = (text, sourceType) => {
     const comments = []
 
-    const acorn_ast = AcornParser.parse(text, {
+    const acorn_ast = getParser().parse(text, {
         ...acornParseOptions,
         sourceType,
         allowImportExportEverywhere: sourceType === 'module',

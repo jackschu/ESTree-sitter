@@ -43,14 +43,14 @@ const files = await Promise.all(
 
 console.log('finished reading')
 
-const ts_opts = {
+const base_ts_opts = {
     parser: 'tree-sitter',
     plugins: [{ parsers }],
 }
 
 const ts_parse = parsers['tree-sitter'].parse
 
-const acorn_opts = {
+const base_acorn_opts = {
     parser: 'custom-acorn',
     plugins: [
         {
@@ -83,8 +83,49 @@ const pare_acorn_tree = (obj) =>
         })
     )
 
+const CURSOR_PLACEHOLDER = '<|>'
+const RANGE_START_PLACEHOLDER = '<<<PRETTIER_RANGE_START>>>'
+const RANGE_END_PLACEHOLDER = '<<<PRETTIER_RANGE_END>>>'
+const indexProperties = [
+    {
+        property: 'cursorOffset',
+        placeholder: CURSOR_PLACEHOLDER,
+    },
+    {
+        property: 'rangeStart',
+        placeholder: RANGE_START_PLACEHOLDER,
+    },
+    {
+        property: 'rangeEnd',
+        placeholder: RANGE_END_PLACEHOLDER,
+    },
+]
+function replacePlaceholders(originalText, originalOptions) {
+    const indexes = indexProperties
+        .map(({ property, placeholder }) => {
+            const value = originalText.indexOf(placeholder)
+            return value === -1 ? undefined : { property, value, placeholder }
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.value - b.value)
+
+    const options = { ...originalOptions }
+    let text = originalText
+    let offset = 0
+    for (const { property, value, placeholder } of indexes) {
+        text = text.replace(placeholder, '')
+        options[property] = value + offset
+        offset -= placeholder.length
+    }
+    return { text, options }
+}
 describe('corpus test', () => {
     files.map(({ name, text }) => {
+        const replaced = replacePlaceholders(text, base_acorn_opts)
+        text = replaced.text
+        const acorn_opts = replaced.options
+        const ts_opts = { ...acorn_opts, ...base_ts_opts }
+
         if (should_throw.includes(name)) {
             test(`Should throw: ${name}`, async () => {
                 await expect(
@@ -97,6 +138,13 @@ describe('corpus test', () => {
             return
         }
 
+        test(`Reference should not throw: ${name}`, async () => {
+            try {
+                await prettier.format(text, acorn_opts)
+            } catch (e) {
+                expect(e).toBe(undefined)
+            }
+        })
         test(`AST match: ${name}`, async () => {
             const ts_ast = ts_parse(text)
 
