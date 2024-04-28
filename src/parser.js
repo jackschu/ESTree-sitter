@@ -97,6 +97,11 @@ const convert = (cursor, children) => {
     switch (cursor.nodeType) {
         case 'expression_statement': {
             out.expression = children[0][1]
+            if (
+                cursor.nodeText.startsWith("'use strict'") ||
+                cursor.nodeText.startsWith('"use strict"')
+            )
+                out.directive = 'use strict'
             return out
         }
         case 'call_expression': {
