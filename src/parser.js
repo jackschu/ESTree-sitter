@@ -210,6 +210,11 @@ const convert = (cursor, children) => {
             out.raw = cursor.nodeText
             return out
         }
+        case 'string': {
+            out.raw = cursor.nodeText
+            out.value = cursor.nodeText.slice(1, -1)
+            return out
+        }
         case 'number': {
             out.raw = cursor.nodeText
             if (out.raw.endsWith('n')) {

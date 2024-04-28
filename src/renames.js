@@ -7,6 +7,7 @@ type_mapping.set('arrow_function', 'ArrowFunctionExpression')
 type_mapping.set('statement_block', 'BlockStatement')
 type_mapping.set('statement_identifier', 'Identifier')
 type_mapping.set('binary_expression', 'LogicalExpression')
+type_mapping.set('string', 'Literal')
 type_mapping.set('number', 'Literal')
 type_mapping.set('regex', 'Literal')
 
