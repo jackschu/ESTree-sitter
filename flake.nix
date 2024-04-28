@@ -73,6 +73,14 @@
         type = "app";
         program = "${jest-esm}/bin/checks-with-env";
       };
+      apps.x86_64-linux.bun_check = let
+        jest-esm = pkgs.writeShellScriptBin "checks-with-env" ''
+        ${pkgs.bun}/bin/bun test corpus.test.js
+        '';
+      in {
+        type = "app";
+        program = "${jest-esm}/bin/checks-with-env";
+      };
       checks.x86_64-linux = {inherit jest-check;};
     };
 }
