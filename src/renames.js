@@ -1,4 +1,5 @@
 export const type_mapping = new Map()
+type_mapping.set('rest_pattern', 'RestElement')
 type_mapping.set('arrow_function', 'ArrowFunctionExpression')
 type_mapping.set('statement_block', 'BlockStatement')
 type_mapping.set('statement_identifier', 'Identifier')

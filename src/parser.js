@@ -118,6 +118,10 @@ const convert = (cursor, children) => {
                 .map((x) => x[1])
             return out
         }
+        case 'rest_pattern': {
+            out.argument = children[1][1]
+            return out
+        }
         case 'formal_parameters': {
             out.children = children.filter(
                 (x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ','
@@ -179,6 +183,8 @@ const convert = (cursor, children) => {
                 out.value = parseInt(cursor.nodeText, 2)
             } else if (out.raw.startsWith('0x') || out.raw.startsWith('0X')) {
                 out.value = parseInt(cursor.nodeText, 16)
+            } else if (out.raw.startsWith('0.')) {
+                out.value = parseFloat(cursor.nodeText)
             } else if (out.raw.startsWith('0')) {
                 out.value = parseInt(cursor.nodeText, 8)
             } else {
