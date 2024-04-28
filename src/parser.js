@@ -122,6 +122,41 @@ const convert = (cursor, children) => {
             out.argument = children[1][1]
             return out
         }
+        case 'shorthand_property_identifier_pattern': {
+            out.name = cursor.nodeText
+            const fake_child = { ...out, type: 'Identifier' }
+            out.computed = false
+            out.kind = 'init'
+            out.method = false
+            out.shorthand = true
+            out.value = fake_child
+            out.key = fake_child
+            return out
+        }
+
+        case 'pair_pattern': {
+            const key_child = children.find((x) => x[0] === 'key')[1]
+            const val_child = children.find((x) => x[0] === 'value')[1]
+            out.computed = cursor.nodeText.startsWith('[')
+            out.kind = 'init'
+            out.method = false
+            out.shorthand = false
+            out.value = val_child
+            out.key = key_child
+            out.name = key_child.name
+            return out
+        }
+        case 'property_identifier': {
+            out.name = cursor.nodeText
+            return out
+        }
+        case 'object_pattern': {
+            const relevant_children = children.filter(
+                (x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ','
+            )
+            out.properties = relevant_children.map((x) => x[1])
+            return out
+        }
         case 'formal_parameters': {
             out.children = children.filter(
                 (x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ','
