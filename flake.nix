@@ -27,19 +27,17 @@
           }
         ];
       };
-      jest-check = pkgs.stdenv.mkDerivation {
-        name = "jest-check";
+      bun-check = pkgs.stdenv.mkDerivation {
+        name = "bun-check";
         src = dream_eval;
         doCheck = true;
         checkPhase = ''
-        # gotta do this or else we'll be in node_modules path
-        # and that'll confuse some of jest's regexs
         TEST_DIR=$(mktemp -d)
         cp -r ./lib/node_modules/estree-sitter $TEST_DIR
         cd $TEST_DIR/estree-sitter
         cp -r ${non_node_packages}/* ./
 
-        NODE_OPTIONS="--experimental-vm-modules" ${dream_eval}/lib/node_modules/estree-sitter/node_modules/jest/bin/jest.js
+        ${pkgs.bun}/bin/bun test ".test.js"
       '';
         installPhase = ''
           mkdir "$out"
@@ -75,12 +73,12 @@
       };
       apps.x86_64-linux.bun_check = let
         jest-esm = pkgs.writeShellScriptBin "checks-with-env" ''
-        ${pkgs.bun}/bin/bun test corpus.test.js
+        ${pkgs.bun}/bin/bun test ".test.js"
         '';
       in {
         type = "app";
         program = "${jest-esm}/bin/checks-with-env";
       };
-      checks.x86_64-linux = {inherit jest-check;};
+      checks.x86_64-linux = {inherit bun-check;};
     };
 }
