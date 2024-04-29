@@ -76,6 +76,20 @@ const merge_position = (first, second) => {
     }
 }
 
+const cursor_to_loc = (cursor) => {
+    const start = convert_position(cursor.startPosition)
+    const end = convert_position(cursor.endPosition)
+    return {
+        start: cursor.startIndex,
+        end: cursor.endIndex,
+        loc: {
+            start,
+            end,
+        },
+        range: [cursor.startIndex, cursor.endIndex],
+    }
+}
+
 /** @param {Parser.TreeCursor} cursor */
 const convert = (cursor, children) => {
     if (cursor.currentFieldName === 'operator') {
@@ -85,16 +99,25 @@ const convert = (cursor, children) => {
             .map((x) => x[1])
             .filter((x) => x.type === 'ExpressionStatement')
     }
-    const start = convert_position(cursor.startPosition)
-    const end = convert_position(cursor.endPosition)
-    const out = {
-        start: cursor.startIndex,
-        end: cursor.endIndex,
-        loc: {
-            start,
-            end,
-        },
-        range: [cursor.startIndex, cursor.endIndex],
+
+    // the estee mob would like us to have our ranges avoid comment children
+    // in strangely specific scenarios
+    const ts_children = cursor.currentNode.children
+    let avoid_comment_child = null
+    if (cursor.nodeType !== 'program') {
+        for (let i = ts_children.length - 1; i >= 0; i--) {
+            if (ts_children[i].type !== 'comment') {
+                if (i !== ts_children.length - 1)
+                    avoid_comment_child = ts_children[i]
+                break
+            }
+        }
+    }
+
+    let out = cursor_to_loc(cursor)
+
+    if (avoid_comment_child) {
+        out = merge_position(out, cursor_to_loc(avoid_comment_child))
     }
     out.type =
         type_mapping.get(cursor.nodeType) ??
