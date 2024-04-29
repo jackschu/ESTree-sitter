@@ -112,6 +112,14 @@ const convert = (cursor, children) => {
                 out.directive = 'use strict'
             return out
         }
+        case 'binary_expression': {
+            for (let pair of children) {
+                out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
+            }
+            const is_logical = ['||', '??', '&&'].includes(out.operator)
+            if (is_logical) out.type = 'LogicalExpression'
+            return out
+        }
         case 'assignment_expression': {
             out.left = children.find((x) => x[0] === 'left')[1]
             out.right = children.find((x) => x[0] === 'right')[1]
@@ -354,9 +362,6 @@ const convert = (cursor, children) => {
             for (let pair of children) {
                 out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
             }
-
-            //      out.text = cursor.nodeText;
-
             return out
         }
     }
