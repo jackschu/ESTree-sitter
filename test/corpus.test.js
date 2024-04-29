@@ -129,7 +129,7 @@ describe('corpus test', () => {
                 formatted_ts = await prettier.format(text, ts_opts)
             } catch (e) {
                 console.error(e)
-                expect(e).toBe(undefined)
+                expect(e).toBe({})
             }
             const formatted_acorn = await prettier.format(text, acorn_opts)
             expect(formatted_ts).toBe(formatted_acorn)

@@ -67,6 +67,14 @@ const convert_position = (point) => ({
     line: point.row + 1,
     column: point.column,
 })
+const merge_position = (first, second) => {
+    return {
+        start: first.start,
+        end: second.end,
+        loc: { start: first.loc.start, end: second.loc.end },
+        range: [first.range[0], second.range[1]],
+    }
+}
 
 /** @param {Parser.TreeCursor} cursor */
 const convert = (cursor, children) => {
@@ -204,6 +212,54 @@ const convert = (cursor, children) => {
             out.async = children[0][1].nodeText === 'async'
 
             out.body = body
+            return out
+        }
+        case 'method_definition': {
+            const maybe_prefix = cursor.currentNode.children[0]
+
+            const child_types = children.map((x) => x[0])
+            if (child_types.includes('get')) {
+                out.kind = 'get'
+            } else if (child_types.includes('set')) {
+                out.kind = 'set'
+            } else {
+                out.kind = 'method'
+            } // TODO: constructor kind
+
+            out.computed = cursor.nodeText.startsWith('[')
+            out.static = child_types.includes('static')
+            out.key = children.find((x) => x[0] === 'name')[1]
+            const body = children.find((x) => x[0] === 'body')[1]
+            const params = children.find((x) => x[0] === 'parameters')[1]
+            out.value = {
+                type: 'FunctionExpression',
+                body,
+                expression: false,
+                id: null,
+                generator: false,
+                params: params.children.map((x) => x[1]),
+                async: child_types.includes('async'),
+                key: body.key,
+                ...merge_position(params, body),
+            }
+            if (cursor.currentNode.parent.type === 'object') {
+                const function_expression = out.value
+                const fake_property = {
+                    type: 'Property',
+                    method: out.kind === 'method',
+                    kind: out.kind === 'method' ? 'init' : out.kind,
+                    shorthand: false,
+                    value: function_expression,
+                    computed: out.computed,
+                    key: out.key,
+                    start: out.start,
+                    end: out.end,
+                    loc: out.loc,
+                    range: out.range,
+                }
+                return fake_property
+            }
+
             return out
         }
         case 'comment': {
