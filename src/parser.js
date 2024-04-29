@@ -104,6 +104,13 @@ const convert = (cursor, children) => {
                 out.directive = 'use strict'
             return out
         }
+        case 'assignment_expression': {
+            out.left = children.find((x) => x[0] === 'left')[1]
+            out.right = children.find((x) => x[0] === 'right')[1]
+
+            out.operator = '='
+            return out
+        }
         case 'call_expression': {
             let optional = false
             for (let pair of children) {
@@ -127,6 +134,7 @@ const convert = (cursor, children) => {
             out.argument = children[1][1]
             return out
         }
+        case 'shorthand_property_identifier':
         case 'shorthand_property_identifier_pattern': {
             out.name = cursor.nodeText
             const fake_child = { ...out, type: 'Identifier' }
@@ -139,11 +147,12 @@ const convert = (cursor, children) => {
             return out
         }
 
+        case 'pair':
         case 'pair_pattern': {
             const key_child = children.find((x) => x[0] === 'key')[1]
             const val_child = children.find((x) => x[0] === 'value')[1]
             out.computed = cursor.nodeText.startsWith('[')
-            out.kind = 'init'
+            out.kind = 'init' // TODO need to support object getters
             out.method = false
             out.shorthand = false
             out.value = val_child
@@ -160,6 +169,10 @@ const convert = (cursor, children) => {
                 (x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ','
             )
             out.properties = relevant_children.map((x) => x[1])
+            return out
+        }
+        case 'spread_element': {
+            out.argument = children.find((x) => x[0] !== '...')[1]
             return out
         }
         case 'formal_parameters': {
@@ -213,6 +226,20 @@ const convert = (cursor, children) => {
                 flags: flag ?? '',
             }
             out.raw = cursor.nodeText
+            return out
+        }
+        case 'object': {
+            out.properties = children.flatMap((pair) => {
+                const [kind, child] = pair
+                switch (kind) {
+                    case '{':
+                    case ',':
+                    case '}':
+                        return []
+                    default:
+                        return [child]
+                }
+            })
             return out
         }
         case 'string': {

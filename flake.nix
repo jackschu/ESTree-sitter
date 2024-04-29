@@ -73,7 +73,7 @@
       };
       apps.x86_64-linux.bun_check = let
         jest-esm = pkgs.writeShellScriptBin "checks-with-env" ''
-        ${pkgs.bun}/bin/bun test ".test.js"
+        ${pkgs.bun}/bin/bun test ".test.js" "$@"
         '';
       in {
         type = "app";
