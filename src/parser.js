@@ -191,6 +191,9 @@ const convert = (cursor, children) => {
             out.argument = children.find((x) => x[0] !== '...')[1]
             return out
         }
+        case 'computed_property_name': {
+            return children.find((x) => x[0] !== '[' && x[0] !== ']')[1]
+        }
         case 'formal_parameters': {
             out.children = children.filter(
                 (x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ','
@@ -257,9 +260,9 @@ const convert = (cursor, children) => {
                     method: out.kind === 'method',
                     kind: out.kind === 'method' ? 'init' : out.kind,
                     shorthand: false,
+                    key: out.key,
                     value: function_expression,
                     computed: out.computed,
-                    key: out.key,
                     start: out.start,
                     end: out.end,
                     loc: out.loc,
