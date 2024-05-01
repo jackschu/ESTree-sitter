@@ -158,17 +158,19 @@ const convert = (cursor, children) => {
             return out
         }
         case 'call_expression': {
-            out.optional =
-                children.find((x) => x[0] === 'optional_chain') !== undefined
-            out.callee = children.find((x) => x[0] === 'function')[1]
             const args = children.find((x) => x[0] === 'arguments')[1]
-            if (args.type === 'TaggedTemplateExpression') {
+            // Tree sitter reads template literals as call expression, handle that here
+            if (args.type === 'TemplateLiteral') {
+                out.tag = children.find((x) => x[0] === 'function')[1]
+                out.quasi = args
+                out.type = 'TaggedTemplateExpression'
             } else {
-                try {
-                    out.arguments = args.children.map((x) => x[1])
-                } catch {} //@nocommit
+                out.optional =
+                    children.find((x) => x[0] === 'optional_chain') !==
+                    undefined
+                out.callee = children.find((x) => x[0] === 'function')[1]
+                out.arguments = args.children.map((x) => x[1])
             }
-
             return out
         }
         case 'escape_sequence':
