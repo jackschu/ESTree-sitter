@@ -94,10 +94,6 @@ const cursor_to_loc = (cursor) => {
 const convert = (cursor, children) => {
     if (cursor.currentFieldName === 'operator') {
         return cursor.nodeText
-    } else if (cursor.currentFieldName === 'arguments') {
-        return children
-            .map((x) => x[1])
-            .filter((x) => x.type === 'ExpressionStatement')
     }
 
     // the estee mob would like us to have our ranges avoid comment children
@@ -126,6 +122,10 @@ const convert = (cursor, children) => {
             .map((word) => capitalize(word))
             .join('')
     switch (cursor.nodeType) {
+        case 'arguments': {
+            out.children = children.filter((x) => x[0] !== '(' && x[0] !== ')')
+            return out
+        }
         case 'expression_statement': {
             out.expression = children[0][1]
             if (
@@ -150,16 +150,20 @@ const convert = (cursor, children) => {
             out.operator = '='
             return out
         }
+        case 'new_expression': {
+            out.callee = children.find((x) => x[0] === 'constructor')[1]
+            out.arguments = children
+                .find((x) => x[0] === 'arguments')[1]
+                .children.map((x) => x[1])
+            return out
+        }
         case 'call_expression': {
-            let optional = false
-            for (let pair of children) {
-                if (pair[0] === 'optional_chain') {
-                    optional = true
-                } else {
-                    out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
-                }
-            }
-            out.optional = optional
+            out.optional =
+                children.find((x) => x[0] === 'optional_chain') !== undefined
+            out.callee = children.find((x) => x[0] === 'function')[1]
+            out.arguments = children
+                .find((x) => x[0] === 'arguments')[1]
+                .children.map((x) => x[1])
 
             return out
         }
@@ -296,10 +300,18 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'html_comment':
         case 'comment': {
-            out.type = cursor.nodeText.startsWith('//') ? 'Line' : 'Block'
-            if (out.type === 'Line') out.value = cursor.nodeText.slice(2)
-            else out.value = cursor.nodeText.slice(2, -2)
+            if (cursor.nodeText.startsWith('//')) {
+                out.type = 'Line'
+                out.value = cursor.nodeText.slice(2)
+            } else if (cursor.nodeText.startsWith('/*')) {
+                out.type = 'Block'
+                out.value = cursor.nodeText.slice(2, -2)
+            } else {
+                out.type = 'Line'
+                out.value = cursor.nodeText.slice(4, -3)
+            }
 
             ts_comments.push(out)
             return null
