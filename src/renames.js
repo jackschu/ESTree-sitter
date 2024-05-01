@@ -7,6 +7,7 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('template_string', 'TemplateLiteral')
 type_mapping.set('property_identifier', 'Identifier')
 type_mapping.set('rest_pattern', 'RestElement')
 type_mapping.set('arrow_function', 'ArrowFunctionExpression')

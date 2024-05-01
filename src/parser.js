@@ -161,10 +161,69 @@ const convert = (cursor, children) => {
             out.optional =
                 children.find((x) => x[0] === 'optional_chain') !== undefined
             out.callee = children.find((x) => x[0] === 'function')[1]
-            out.arguments = children
-                .find((x) => x[0] === 'arguments')[1]
-                .children.map((x) => x[1])
+            const args = children.find((x) => x[0] === 'arguments')[1]
+            if (args.type === 'TaggedTemplateExpression') {
+            } else {
+                try {
+                    out.arguments = args.children.map((x) => x[1])
+                } catch {} //@nocommit
+            }
 
+            return out
+        }
+        case 'escape_sequence':
+        case 'string_fragment': {
+            out.text = cursor.nodeText
+            return out
+        }
+        case 'template_substitution': {
+            out.child = children.find((x) => x[0] !== '${' && x[0] !== '}')[1]
+            return out
+        }
+        case 'template_string': {
+            let was_string = true
+            const todo_quasis = []
+            let staging_quasis = []
+            out.expressions = []
+            for (let child of children) {
+                const is_expr = child[0] === 'template_substitution'
+                if (was_string && (is_expr || child[0] === '`')) {
+                    if (staging_quasis.length) {
+                        todo_quasis.push(staging_quasis)
+                    }
+                    staging_quasis = []
+                }
+                if (is_expr) {
+                    out.expressions.push(child[1].child)
+                } else if (child[0] !== '`') {
+                    staging_quasis.push(child[1])
+                }
+
+                was_string = !is_expr
+            }
+
+            out.quasis = todo_quasis.map((incoming) => {
+                return incoming.reduce(
+                    (acc, cur) => {
+                        acc.value.raw += cur.text
+
+                        return { ...acc, ...merge_position(acc, cur) }
+                    },
+                    {
+                        start: incoming[0].start,
+                        end: incoming[0].end,
+                        loc: incoming[0].loc,
+                        range: incoming[0].range,
+                        type: 'TemplateElement',
+                        tail: false,
+                        value: {
+                            raw: '',
+                        },
+                    }
+                )
+            })
+
+            if (out.quasis.at(-1)) out.quasis.at(-1).tail = true
             return out
         }
         case 'statement_block': {
