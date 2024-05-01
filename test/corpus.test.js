@@ -64,8 +64,6 @@ test('smoke test', async () => {
 const pare_acorn_tree = (obj) =>
     JSON.parse(
         JSON.stringify(obj, function (key, value) {
-            if (this.type === 'TemplateElement' && key === 'value')
-                return { raw: value.raw }
             if (this.type === 'Program' && key === 'sourceType')
                 return undefined
             if (this.type === 'Literal' && ['bigint'].includes(key))

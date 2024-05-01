@@ -198,7 +198,7 @@ const convert = (cursor, children) => {
                 if (is_expr) {
                     out.expressions.push(child[1].child)
                 } else if (child[0] !== '`') {
-                    staging_quasis.push(child[1])
+                    staging_quasis.push(child)
                 }
 
                 was_string = !is_expr
@@ -207,18 +207,23 @@ const convert = (cursor, children) => {
             out.quasis = todo_quasis.map((incoming) => {
                 return incoming.reduce(
                     (acc, cur) => {
-                        acc.value.raw += cur.text
+                        acc.value.cooked +=
+                            cur[0] === 'string_fragment'
+                                ? cur[1].text
+                                : unraw(cur[1].text)
+                        acc.value.raw += cur[1].text
 
-                        return { ...acc, ...merge_position(acc, cur) }
+                        return { ...acc, ...merge_position(acc, cur[1]) }
                     },
                     {
-                        start: incoming[0].start,
-                        end: incoming[0].end,
-                        loc: incoming[0].loc,
-                        range: incoming[0].range,
+                        start: incoming[0][1].start,
+                        end: incoming[0][1].end,
+                        loc: incoming[0][1].loc,
+                        range: incoming[0][1].range,
                         type: 'TemplateElement',
                         tail: false,
                         value: {
+                            cooked: '',
                             raw: '',
                         },
                     }
@@ -464,4 +469,44 @@ const convert = (cursor, children) => {
             return out
         }
     }
+}
+
+// https://stackoverflow.com/questions/57330203/unraw-a-string-in-javascript
+function unraw(str) {
+    return str.replace(
+        /\\[0-9]|\\['"\bfnrtv]|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}|\\u\{[0-9a-f]+\}|\\./gi,
+        (match) => {
+            switch (match[1]) {
+                case "'":
+                case '"':
+                case '\\':
+                    return match[1]
+                case 'b':
+                    return '\b'
+                case 'f':
+                    return '\f'
+                case 'n':
+                    return '\n'
+                case 'r':
+                    return '\r'
+                case 't':
+                    return '\t'
+                case 'v':
+                    return '\v'
+                case 'u':
+                    if (match[2] === '{') {
+                        return String.fromCodePoint(
+                            parseInt(match.substring(3), 16)
+                        )
+                    }
+                    return String.fromCharCode(parseInt(match.substring(2), 16))
+                case 'x':
+                    return String.fromCharCode(parseInt(match.substring(2), 16))
+                case '0':
+                    return '\0'
+                default: // E.g., "\q" === "q"
+                    return match.substring(1)
+            }
+        }
+    )
 }
