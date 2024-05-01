@@ -76,6 +76,21 @@ const merge_position = (first, second) => {
     }
 }
 
+const program_cursor_to_loc = (cursor) => {
+    const end = convert_position(cursor.endPosition)
+    return {
+        start: 0,
+        end: cursor.endIndex,
+        loc: {
+            start: {
+                line: 1,
+                column: 0,
+            },
+            end,
+        },
+        range: [0, cursor.endIndex],
+    }
+}
 const cursor_to_loc = (cursor) => {
     const start = convert_position(cursor.startPosition)
     const end = convert_position(cursor.endPosition)
@@ -110,7 +125,10 @@ const convert = (cursor, children) => {
         }
     }
 
-    let out = cursor_to_loc(cursor)
+    let out =
+        cursor.nodeType === 'program'
+            ? program_cursor_to_loc(cursor)
+            : cursor_to_loc(cursor)
 
     if (avoid_comment_child) {
         out = merge_position(out, cursor_to_loc(avoid_comment_child))
