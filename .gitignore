@@ -127,6 +127,7 @@ result
 result/
 
 test/ambition
+test/quarantine
 
 temp.json
 temp_estree.json

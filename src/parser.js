@@ -105,7 +105,10 @@ const cursor_to_loc = (cursor) => {
     }
 }
 
-/** @param {Parser.TreeCursor} cursor */
+/**
+ * @param {Parser.TreeCursor} cursor
+ * @param {unknown[]} children
+ */
 const convert = (cursor, children) => {
     if (cursor.currentFieldName === 'operator') {
         return cursor.nodeText
@@ -140,6 +143,38 @@ const convert = (cursor, children) => {
             .map((word) => capitalize(word))
             .join('')
     switch (cursor.nodeType) {
+        case 'export_clause': {
+            out.children = children.filter(
+                (x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ','
+            )
+            return out
+        }
+        case 'export_specifier': {
+            out.local = children.find((x) => x[0] === 'name')[1]
+            out.exported =
+                children.find((x) => x[0] === 'alias')?.[1] ?? out.local
+            return out
+        }
+        case 'export_statement': {
+            if (children.find((x) => x[0] === 'default')) {
+                out.type = 'ExportDefaultDeclaration' // TODO export specifier and export all
+
+                const value = children.find(
+                    (x) => x[0] === 'value' || x[0] === 'declaration'
+                )
+                out.declaration = value[1]
+            } else if (children.find((x) => x[0] === 'export_clause')) {
+                out.type = 'ExportNamedDeclaration'
+                out.declaration = null
+                const source = children.find((x) => x[0] === 'source')
+                out.source = source ? source[1] : null
+
+                const clause = children.find((x) => x[0] === 'export_clause')
+                out.specifiers = clause[1].children.map((x) => x[1])
+            }
+
+            return out
+        }
         case 'arguments': {
             out.children = children.filter((x) => x[0] !== '(' && x[0] !== ')')
             return out
