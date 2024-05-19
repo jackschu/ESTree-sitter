@@ -129,4 +129,6 @@ result/
 test/ambition
 
 temp.json
+temp_estree.json
+temp_acorn.json
 test/corpus/POD.ts

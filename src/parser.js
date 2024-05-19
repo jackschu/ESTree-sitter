@@ -168,6 +168,17 @@ const convert = (cursor, children) => {
             out.operator = '='
             return out
         }
+        case 'await_expression': {
+            const candidates = children.filter((x) => x[0] !== 'await')
+            if (candidates.length !== 1) {
+                throw new Error(
+                    `Await expression with non-one expressions length ${candidates.length}`
+                )
+            }
+            out.argument = candidates[0][1]
+
+            return out
+        }
         case 'new_expression': {
             out.callee = children.find((x) => x[0] === 'constructor')[1]
             out.arguments = children

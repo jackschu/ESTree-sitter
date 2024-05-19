@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import fs from 'node:fs'
 import path from 'node:path'
 import url from 'node:url'
@@ -115,11 +115,19 @@ describe('corpus test', () => {
             const text = await get_text()
             const ts_ast = ts_parse(text)
 
-            if (DEBUG) console.log(JSON.stringify(ts_ast, null, 4))
+            if (DEBUG) {
+                let tree = JSON.stringify(ts_ast, null, 4)
+                console.log(tree)
+                await writeFile('./temp_estree.json', tree)
+            }
             let acorn_ast = acorn_parse(text)
             acorn_ast = pare_acorn_tree(acorn_ast)
-            if (DEBUG) console.log('acorn_ast;')
-            if (DEBUG) console.log(JSON.stringify(acorn_ast, null, 4))
+            if (DEBUG) {
+                console.log('acorn_ast;')
+                let tree = JSON.stringify(acorn_ast, null, 4)
+                console.log(tree)
+                await writeFile('./temp_acorn.json', tree)
+            }
             expect(ts_ast).toMatchObject(acorn_ast)
         })
         test(`Prettier match: ${name}`, async () => {
