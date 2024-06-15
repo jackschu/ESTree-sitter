@@ -229,11 +229,16 @@ const convert = (cursor, children) => {
         }
         case 'expression_statement': {
             out.expression = children[0][1]
-            if (
-                cursor.nodeText.startsWith("'use strict'") ||
-                cursor.nodeText.startsWith('"use strict"')
-            )
-                out.directive = 'use strict'
+            // Probably this is the more correct but less compatible code:
+            // if (
+            //     cursor.nodeText.startsWith("'use strict'") ||
+            //     cursor.nodeText.startsWith('"use strict"')
+            // )
+            //     out.directive = 'use strict'
+            // but for some reason acorn / prettier expect this:
+            if (children[0][0] === 'string') {
+                out.directive = children[0][1].value
+            }
             return out
         }
         case 'binary_expression': {
