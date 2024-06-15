@@ -190,6 +190,11 @@ const convert = (cursor, children) => {
             out.children = non_symbol_children(children)
             return out
         }
+        case 'namespace_export': {
+            // skip '*' and 'as'
+            out.name = children[2][1]
+            return out
+        }
         case 'export_specifier': {
             out.local = findx_child(children, 'name', 'export_specifier')
             out.exported = find_child(children, 'alias') ?? out.local
@@ -197,8 +202,13 @@ const convert = (cursor, children) => {
             return out
         }
         case 'export_statement': {
-            if (find_child(children, 'default')) {
-                out.type = 'ExportDefaultDeclaration' // TODO export specifier and export all
+            let namespace_child = find_child(children, 'namespace_export')
+            if (find_child(children, '*') || namespace_child) {
+                out.type = 'ExportAllDeclaration'
+                out.source = findx_child(children, 'source', cursor.nodeType)
+                out.exported = namespace_child ?? null
+            } else if (find_child(children, 'default')) {
+                out.type = 'ExportDefaultDeclaration' // TODO export specifier
 
                 const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
                 out.declaration = value[1]
