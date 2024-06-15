@@ -208,8 +208,7 @@ const convert = (cursor, children) => {
                 out.source = findx_child(children, 'source', cursor.nodeType)
                 out.exported = namespace_child ?? null
             } else if (find_child(children, 'default')) {
-                out.type = 'ExportDefaultDeclaration' // TODO export specifier
-
+                out.type = 'ExportDefaultDeclaration'
                 const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
                 out.declaration = value[1]
             } else if (find_child(children, 'export_clause')) {
@@ -388,6 +387,10 @@ const convert = (cursor, children) => {
         case 'computed_property_name': {
             return non_symbol_children(children)[0][1]
         }
+        case 'parenthesized_expression': {
+            out.children = non_symbol_children(children)
+            return out
+        }
         case 'formal_parameters': {
             out.children = non_symbol_children(children)
             return out
@@ -529,6 +532,19 @@ const convert = (cursor, children) => {
             out.body = children.map((x) => x[1])
             return out
         }
+        case 'if_statement': {
+            const parenthesized_expression = findx_child(children, 'condition', cursor.nodeType)
+
+            out.test = parenthesized_expression.children[0][1]
+            out.consequent = findx_child(children, 'consequence', cursor.nodeType)
+            const else_statement = find_child(children, 'alternative', cursor.nodeType)
+            out.alternate = else_statement?.body ?? null
+            return out
+        }
+        case 'else_clause': {
+            out.body = children.find((x) => x[0] !== 'else')[1]
+            return out
+        }
         case 'return_statement': {
             const child_candidates = children.filter((x) => x[0] !== 'return').map((x) => x[1])
             if (child_candidates.length > 1) {
@@ -548,6 +564,7 @@ const convert = (cursor, children) => {
         }
 
         default: {
+            // TODO probably enumerate which ones we expect to hit here
             return apply_children(out, children)
         }
     }
