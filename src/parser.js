@@ -56,9 +56,20 @@ const traverse_tree = (cursor) => {
 const useless_children = new Set()
 useless_children.add('regex')
 
+const symbol_children = new Set(['{', ',', '}', '(', ')', ':', '?', '${', '...', ';'])
+
 /**
  * @template T
- * @param {T[]} children
+ * @param {[string, T][]} children
+ * @returns {[string, T][]}
+ */
+function non_symbol_children(children) {
+    return children.filter(([key, _unused]) => !symbol_children.has(key))
+}
+
+/**
+ * @template T
+ * @param {[string, T][]} children
  * @param {string} name
  * @param {string?} parent_name
  * @returns {T}
@@ -73,12 +84,25 @@ function findx_child(children, name, parent_name) {
 
 /**
  * @template T
- * @param {T[]} children
+ * @param {object} out
+ * @param {[string, unknown][]} children
+ * @returns {object}
+ */
+function apply_children(out, children) {
+    for (let pair of children) {
+        out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
+    }
+    return out
+}
+
+/**
+ * @template T
+ * @param {[string, T][]} children
  * @param {string} name
  * @returns {T | undefined}
  */
 function find_child(children, name) {
-    return children.find((x) => x[0] === 'name')
+    return children.find((x) => x[0] === name)?.[1]
 }
 
 function capitalize(string) {
@@ -163,34 +187,35 @@ const convert = (cursor, children) => {
             .join('')
     switch (cursor.nodeType) {
         case 'export_clause': {
-            out.children = children.filter((x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ',')
+            out.children = non_symbol_children(children)
             return out
         }
         case 'export_specifier': {
-            out.local = children.find((x) => x[0] === 'name')[1]
-            out.exported = children.find((x) => x[0] === 'alias')?.[1] ?? out.local
+            out.local = findx_child(children, 'name', 'export_specifier')
+            out.exported = find_child(children, 'alias') ?? out.local
+
             return out
         }
         case 'export_statement': {
-            if (children.find((x) => x[0] === 'default')) {
+            if (find_child(children, 'default')) {
                 out.type = 'ExportDefaultDeclaration' // TODO export specifier and export all
 
                 const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
                 out.declaration = value[1]
-            } else if (children.find((x) => x[0] === 'export_clause')) {
+            } else if (find_child(children, 'export_clause')) {
                 out.type = 'ExportNamedDeclaration'
                 out.declaration = null
-                const source = children.find((x) => x[0] === 'source')
-                out.source = source ? source[1] : null
+                const source = find_child(children, 'source')
+                out.source = source ?? null
 
-                const clause = children.find((x) => x[0] === 'export_clause')
-                out.specifiers = clause[1].children.map((x) => x[1])
+                const clause = findx_child(children, 'export_clause')
+                out.specifiers = clause.children.map((x) => x[1])
             }
 
             return out
         }
         case 'arguments': {
-            out.children = children.filter((x) => x[0] !== '(' && x[0] !== ')')
+            out.children = non_symbol_children(children)
             return out
         }
         case 'expression_statement': {
@@ -203,16 +228,14 @@ const convert = (cursor, children) => {
             return out
         }
         case 'binary_expression': {
-            for (let pair of children) {
-                out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
-            }
+            apply_children(out, children)
             const is_logical = ['||', '??', '&&'].includes(out.operator)
             if (is_logical) out.type = 'LogicalExpression'
             return out
         }
         case 'assignment_expression': {
-            out.left = children.find((x) => x[0] === 'left')[1]
-            out.right = children.find((x) => x[0] === 'right')[1]
+            out.left = findx_child(children, 'left', 'assigment_expression')
+            out.right = findx_child(children, 'right', 'assigment_expression')
 
             out.operator = '='
             return out
@@ -229,20 +252,22 @@ const convert = (cursor, children) => {
             return out
         }
         case 'new_expression': {
-            out.callee = children.find((x) => x[0] === 'constructor')[1]
-            out.arguments = children.find((x) => x[0] === 'arguments')[1].children.map((x) => x[1])
+            out.callee = findx_child(children, 'constructor', 'new_expression')
+            out.arguments = findx_child(children, 'arguments', 'new_expression').children.map(
+                (x) => x[1]
+            )
             return out
         }
         case 'call_expression': {
-            const args = children.find((x) => x[0] === 'arguments')[1]
+            const args = findx_child(children, 'arguments', 'call_expression')
             // Tree sitter reads template literals as call expression, handle that here
             if (args.type === 'TemplateLiteral') {
-                out.tag = children.find((x) => x[0] === 'function')[1]
+                out.tag = findx_child(children, 'function', 'call_expression')
                 out.quasi = args
                 out.type = 'TaggedTemplateExpression'
             } else {
-                out.optional = children.find((x) => x[0] === 'optional_chain') !== undefined
-                out.callee = children.find((x) => x[0] === 'function')[1]
+                out.optional = find_child(children, 'optional_chain') !== undefined
+                out.callee = findx_child(children, 'function', 'call_expression')
                 out.arguments = args.children.map((x) => x[1])
             }
             return out
@@ -253,7 +278,7 @@ const convert = (cursor, children) => {
             return out
         }
         case 'template_substitution': {
-            out.child = children.find((x) => x[0] !== '${' && x[0] !== '}')[1]
+            out.child = non_symbol_children(children)[0][1]
             return out
         }
         case 'template_string': {
@@ -306,7 +331,7 @@ const convert = (cursor, children) => {
             return out
         }
         case 'statement_block': {
-            out.body = children.filter((x) => x[0] !== '{' && x[0] !== '}').map((x) => x[1])
+            out.body = non_symbol_children(children).map((x) => x[1])
             return out
         }
         case 'rest_pattern': {
@@ -328,13 +353,12 @@ const convert = (cursor, children) => {
 
         case 'pair':
         case 'pair_pattern': {
-            const key_child = children.find((x) => x[0] === 'key')[1]
-            const val_child = children.find((x) => x[0] === 'value')[1]
+            const key_child = findx_child(children, 'key', cursor.nodeType)
             out.computed = cursor.nodeText.startsWith('[')
             out.kind = 'init' // TODO need to support object getters
             out.method = false
             out.shorthand = false
-            out.value = val_child
+            out.value = findx_child(children, 'value', cursor.nodeType)
             out.key = key_child
             out.name = key_child.name
             return out
@@ -344,41 +368,34 @@ const convert = (cursor, children) => {
             return out
         }
         case 'object_pattern': {
-            const relevant_children = children.filter(
-                (x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ','
-            )
-            out.properties = relevant_children.map((x) => x[1])
+            out.properties = non_symbol_children(children).map((x) => x[1])
             return out
         }
         case 'spread_element': {
-            out.argument = children.find((x) => x[0] !== '...')[1]
+            out.argument = non_symbol_children(children)[0][1]
             return out
         }
         case 'computed_property_name': {
-            return children.find((x) => x[0] !== '[' && x[0] !== ']')[1]
+            return non_symbol_children(children)[0][1]
         }
         case 'formal_parameters': {
-            out.children = children.filter((x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ',')
+            out.children = non_symbol_children(children)
             return out
         }
         case 'ternary_expression': {
-            const condition = findx_child(children, 'condition', 'ternary_expression')
-            //            const condition = findx_child(children, 'condition', 'ternary_expression')
-
-            return out
+            children = non_symbol_children(children)
+            return apply_children(out, children)
         }
         case 'arrow_function': {
-            const body = children.find((x) => x[0] === 'body')?.[1]
-            if (!body) throw new Error('arrow func with no body')
+            const body = findx_child(children, 'body', 'arrow_function')
             out.expression = body.type !== 'BlockStatement'
 
-            const parameter = children.find((x) => x[0] === 'parameter')?.[1]
+            const parameter = find_child(children, 'parameter')
 
             if (parameter) {
                 out.params = [parameter]
             } else {
-                const parameters = children.find((x) => x[0] === 'parameters')?.[1]
-                if (!parameters) throw new Error('arrow func with no params')
+                const parameters = findx_child(children, 'parameters', 'arrow_function')
                 const parameter_children = parameters.children
                 out.params = parameter_children.map((x) => x[1])
             }
@@ -404,9 +421,9 @@ const convert = (cursor, children) => {
 
             out.computed = cursor.nodeText.startsWith('[')
             out.static = child_types.includes('static')
-            out.key = children.find((x) => x[0] === 'name')[1]
-            const body = children.find((x) => x[0] === 'body')[1]
-            const params = children.find((x) => x[0] === 'parameters')[1]
+            out.key = findx_child(children, 'name', 'method_definition')
+            const body = findx_child(children, 'body', 'method_definition')
+            const params = findx_child(children, 'parameters', 'method_definition')
             out.value = {
                 type: 'FunctionExpression',
                 body,
@@ -468,17 +485,7 @@ const convert = (cursor, children) => {
             return out
         }
         case 'object': {
-            out.properties = children.flatMap((pair) => {
-                const [kind, child] = pair
-                switch (kind) {
-                    case '{':
-                    case ',':
-                    case '}':
-                        return []
-                    default:
-                        return [child]
-                }
-            })
+            out.properties = non_symbol_children(children).map((x) => x[1])
             return out
         }
         case 'string': {
@@ -531,10 +538,7 @@ const convert = (cursor, children) => {
         }
 
         default: {
-            for (let pair of children) {
-                out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
-            }
-            return out
+            return apply_children(out, children)
         }
     }
 }
