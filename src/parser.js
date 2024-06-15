@@ -286,6 +286,25 @@ const convert = (cursor, children) => {
             }
             return out
         }
+        case 'variable_declarator': {
+            out.id = findx_child(children, 'name', cursor.nodeType)
+            out.init = find_child(children, 'value') ?? null
+            return out
+        }
+        case 'lexical_declaration': {
+            out.kind = findx_child(children, 'kind', cursor.nodeType).type.toLowerCase()
+            out.declarations = non_symbol_children(children)
+                .slice(1)
+                .map((x) => x[1])
+            return out
+        }
+        case 'variable_declaration': {
+            out.kind = 'var'
+            out.declarations = non_symbol_children(children)
+                .slice(1)
+                .map((x) => x[1])
+            return out
+        }
         case 'escape_sequence':
         case 'string_fragment': {
             out.text = cursor.nodeText
