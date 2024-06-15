@@ -3,9 +3,7 @@ import Parser from 'web-tree-sitter'
 import { type_mapping, field_map } from './renames'
 
 await Parser.init()
-const JavaScript = await Parser.Language.load(
-    './vendored/tree-sitter-javascript.wasm'
-)
+const JavaScript = await Parser.Language.load('./vendored/tree-sitter-javascript.wasm')
 
 const parser = new Parser()
 
@@ -57,6 +55,31 @@ const traverse_tree = (cursor) => {
 
 const useless_children = new Set()
 useless_children.add('regex')
+
+/**
+ * @template T
+ * @param {T[]} children
+ * @param {string} name
+ * @param {string?} parent_name
+ * @returns {T}
+ */
+function findx_child(children, name, parent_name) {
+    const found = find_child(children, name)
+    if (found === undefined) {
+        throw new Error(`Couldnt find child ${name} of parent ${parent_name ?? 'unknown'}`)
+    }
+    return found
+}
+
+/**
+ * @template T
+ * @param {T[]} children
+ * @param {string} name
+ * @returns {T | undefined}
+ */
+function find_child(children, name) {
+    return children.find((x) => x[0] === 'name')
+}
 
 function capitalize(string) {
     return string.charAt(0).toUpperCase() + string.slice(1)
@@ -121,17 +144,13 @@ const convert = (cursor, children) => {
     if (cursor.nodeType !== 'program') {
         for (let i = ts_children.length - 1; i >= 0; i--) {
             if (ts_children[i].type !== 'comment') {
-                if (i !== ts_children.length - 1)
-                    avoid_comment_child = ts_children[i]
+                if (i !== ts_children.length - 1) avoid_comment_child = ts_children[i]
                 break
             }
         }
     }
 
-    let out =
-        cursor.nodeType === 'program'
-            ? program_cursor_to_loc(cursor)
-            : cursor_to_loc(cursor)
+    let out = cursor.nodeType === 'program' ? program_cursor_to_loc(cursor) : cursor_to_loc(cursor)
 
     if (avoid_comment_child) {
         out = merge_position(out, cursor_to_loc(avoid_comment_child))
@@ -144,24 +163,19 @@ const convert = (cursor, children) => {
             .join('')
     switch (cursor.nodeType) {
         case 'export_clause': {
-            out.children = children.filter(
-                (x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ','
-            )
+            out.children = children.filter((x) => x[0] !== '{' && x[0] !== '}' && x[0] !== ',')
             return out
         }
         case 'export_specifier': {
             out.local = children.find((x) => x[0] === 'name')[1]
-            out.exported =
-                children.find((x) => x[0] === 'alias')?.[1] ?? out.local
+            out.exported = children.find((x) => x[0] === 'alias')?.[1] ?? out.local
             return out
         }
         case 'export_statement': {
             if (children.find((x) => x[0] === 'default')) {
                 out.type = 'ExportDefaultDeclaration' // TODO export specifier and export all
 
-                const value = children.find(
-                    (x) => x[0] === 'value' || x[0] === 'declaration'
-                )
+                const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
                 out.declaration = value[1]
             } else if (children.find((x) => x[0] === 'export_clause')) {
                 out.type = 'ExportNamedDeclaration'
@@ -216,9 +230,7 @@ const convert = (cursor, children) => {
         }
         case 'new_expression': {
             out.callee = children.find((x) => x[0] === 'constructor')[1]
-            out.arguments = children
-                .find((x) => x[0] === 'arguments')[1]
-                .children.map((x) => x[1])
+            out.arguments = children.find((x) => x[0] === 'arguments')[1].children.map((x) => x[1])
             return out
         }
         case 'call_expression': {
@@ -229,9 +241,7 @@ const convert = (cursor, children) => {
                 out.quasi = args
                 out.type = 'TaggedTemplateExpression'
             } else {
-                out.optional =
-                    children.find((x) => x[0] === 'optional_chain') !==
-                    undefined
+                out.optional = children.find((x) => x[0] === 'optional_chain') !== undefined
                 out.callee = children.find((x) => x[0] === 'function')[1]
                 out.arguments = args.children.map((x) => x[1])
             }
@@ -272,9 +282,7 @@ const convert = (cursor, children) => {
                 return incoming.reduce(
                     (acc, cur) => {
                         acc.value.cooked +=
-                            cur[0] === 'string_fragment'
-                                ? cur[1].text
-                                : unraw(cur[1].text)
+                            cur[0] === 'string_fragment' ? cur[1].text : unraw(cur[1].text)
                         acc.value.raw += cur[1].text
 
                         return { ...acc, ...merge_position(acc, cur[1]) }
@@ -298,9 +306,7 @@ const convert = (cursor, children) => {
             return out
         }
         case 'statement_block': {
-            out.body = children
-                .filter((x) => x[0] !== '{' && x[0] !== '}')
-                .map((x) => x[1])
+            out.body = children.filter((x) => x[0] !== '{' && x[0] !== '}').map((x) => x[1])
             return out
         }
         case 'rest_pattern': {
@@ -352,9 +358,13 @@ const convert = (cursor, children) => {
             return children.find((x) => x[0] !== '[' && x[0] !== ']')[1]
         }
         case 'formal_parameters': {
-            out.children = children.filter(
-                (x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ','
-            )
+            out.children = children.filter((x) => x[0] !== '(' && x[0] !== ')' && x[0] !== ',')
+            return out
+        }
+        case 'ternary_expression': {
+            const condition = findx_child(children, 'condition', 'ternary_expression')
+            //            const condition = findx_child(children, 'condition', 'ternary_expression')
+
             return out
         }
         case 'arrow_function': {
@@ -367,9 +377,7 @@ const convert = (cursor, children) => {
             if (parameter) {
                 out.params = [parameter]
             } else {
-                const parameters = children.find(
-                    (x) => x[0] === 'parameters'
-                )?.[1]
+                const parameters = children.find((x) => x[0] === 'parameters')?.[1]
                 if (!parameters) throw new Error('arrow func with no params')
                 const parameter_children = parameters.children
                 out.params = parameter_children.map((x) => x[1])
@@ -447,8 +455,7 @@ const convert = (cursor, children) => {
             return null
         }
         case 'regex': {
-            const pattern =
-                cursor.currentNode.childForFieldName('pattern')?.text
+            const pattern = cursor.currentNode.childForFieldName('pattern')?.text
             const flag = cursor.currentNode.childForFieldName('flags')?.text
 
             if (flag !== null) out.value = new RegExp(pattern, flag)
@@ -506,13 +513,10 @@ const convert = (cursor, children) => {
             return out
         }
         case 'return_statement': {
-            const child_candidates = children
-                .filter((x) => x[0] !== 'return')
-                .map((x) => x[1])
+            const child_candidates = children.filter((x) => x[0] !== 'return').map((x) => x[1])
             if (child_candidates.length > 1) {
                 throw new Error(
-                    'return with multiple expressions? ' +
-                        JSON.stringify(child_candidates)
+                    'return with multiple expressions? ' + JSON.stringify(child_candidates)
                 )
             }
             out.argument = child_candidates[0]
@@ -559,9 +563,7 @@ function unraw(str) {
                     return '\v'
                 case 'u':
                     if (match[2] === '{') {
-                        return String.fromCodePoint(
-                            parseInt(match.substring(3), 16)
-                        )
+                        return String.fromCodePoint(parseInt(match.substring(3), 16))
                     }
                     return String.fromCharCode(parseInt(match.substring(2), 16))
                 case 'x':
