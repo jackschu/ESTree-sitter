@@ -462,6 +462,10 @@ const convert = (cursor, children) => {
         case 'computed_property_name': {
             return non_symbol_children(children)[0][1]
         }
+        case 'sequence_expression': {
+            out.expressions = non_symbol_children(children).map((x) => x[1])
+            return out
+        }
         case 'parenthesized_expression': {
             out.expression = non_symbol_children(children)[0][1]
             return out
