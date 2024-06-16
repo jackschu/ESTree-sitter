@@ -495,6 +495,18 @@ const convert = (cursor, children) => {
             out.body = body
             return out
         }
+        case 'function_declaration': {
+            out.id = findx_child(children, 'name', cursor.nodeType)
+            out.params = findx_child(children, 'parameters', cursor.nodeType).children.map(
+                (x) => x[1]
+            )
+            out.body = findx_child(children, 'body', cursor.nodeType)
+            out.async = findx_child(children, 'name', cursor.nodeType)
+            out.generator = false
+            out.expression = false
+            out.async = find_child(children, 'async') ?? false
+            return out
+        }
         case 'method_definition': {
             const maybe_prefix = cursor.currentNode.children[0]
 
