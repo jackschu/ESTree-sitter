@@ -431,8 +431,7 @@ const convert = (cursor, children) => {
             return non_symbol_children(children)[0][1]
         }
         case 'parenthesized_expression': {
-            out.children = non_symbol_children(children)
-            return out
+            return non_symbol_children(children)[0][1]
         }
         case 'formal_parameters': {
             out.children = non_symbol_children(children)
@@ -578,7 +577,7 @@ const convert = (cursor, children) => {
         case 'if_statement': {
             const parenthesized_expression = findx_child(children, 'condition', cursor.nodeType)
 
-            out.test = parenthesized_expression.children[0][1]
+            out.test = parenthesized_expression
             out.consequent = findx_child(children, 'consequence', cursor.nodeType)
             const else_statement = find_child(children, 'alternative', cursor.nodeType)
             out.alternate = else_statement?.body ?? null
