@@ -341,6 +341,16 @@ const convert = (cursor, children) => {
             out.body = non_symbol_children(children).map((x) => x[1])
             return out
         }
+        case 'class': {
+            if (children.length === 0) {
+                //'class' overlaps with the literal
+                return out
+            }
+            out.body = findx_child(children, 'body', cursor.nodeType)
+            out.id = find_child(children, 'name') ?? null
+            out.superClass = find_child(children, 'class_heritage') ?? null
+            return out
+        }
         case 'class_declaration': {
             out.id = findx_child(children, 'name', cursor.nodeType)
             out.body = findx_child(children, 'body', cursor.nodeType)
