@@ -7,6 +7,7 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('this', 'ThisExpression')
 type_mapping.set('class', 'ClassExpression')
 type_mapping.set('field_definition', 'PropertyDefinition')
 type_mapping.set('lexical_declaration', 'VariableDeclaration')
