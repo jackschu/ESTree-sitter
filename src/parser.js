@@ -20,7 +20,8 @@ export const parse = (text) => {
 
     const ts_ast = parser.parse(text)
 
-    const [_, out_obj] = traverse_tree(ts_ast.walk())
+    let [_, out_obj] = traverse_tree(ts_ast.walk())
+    out_obj = cull_parenthesized_expressions(out_obj)
     out_obj.comments = ts_comments
 
     return out_obj
@@ -44,6 +45,7 @@ const traverse_tree = (cursor) => {
     }
 
     out = convert(cursor, children)
+
     if (out === null) return null
     let name = cursor.currentFieldName
     if (name == null) {
@@ -51,6 +53,24 @@ const traverse_tree = (cursor) => {
         //        console.log('no field for node type', name)
     }
     return [name, out]
+}
+
+/**
+ * @param {object} out
+ */
+function cull_parenthesized_expressions(out) {
+    for (let [key, val] of Object.entries(out)) {
+        if (typeof val !== 'object' || val === null) {
+            continue
+        }
+
+        out[key] = cull_parenthesized_expressions(val)
+        if (val.type === 'ParenthesizedExpression') {
+            out[key] = val.expression
+        }
+    }
+
+    return out
 }
 
 const useless_children = new Set()
@@ -80,6 +100,18 @@ function findx_child(children, name, parent_name) {
         throw new Error(`Couldnt find child ${name} of parent ${parent_name ?? 'unknown'}`)
     }
     return found
+}
+/**
+ * @param {(Statement|ModuleDeclaration)[]} body
+ */
+function annotate_directives(body) {
+    for (let elem of body) {
+        if (elem.type !== 'ExpressionStatement') return
+        const expression = elem.expression
+        if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
+
+        elem.directive = expression.value
+    }
 }
 
 /**
@@ -229,16 +261,6 @@ const convert = (cursor, children) => {
         }
         case 'expression_statement': {
             out.expression = children[0][1]
-            // Probably this is the more correct but less compatible code:
-            // if (
-            //     cursor.nodeText.startsWith("'use strict'") ||
-            //     cursor.nodeText.startsWith('"use strict"')
-            // )
-            //     out.directive = 'use strict'
-            // but for some reason acorn / prettier expect this:
-            if (children[0][0] === 'string') {
-                out.directive = children[0][1].value
-            }
             return out
         }
         case 'binary_expression': {
@@ -431,7 +453,8 @@ const convert = (cursor, children) => {
             return non_symbol_children(children)[0][1]
         }
         case 'parenthesized_expression': {
-            return non_symbol_children(children)[0][1]
+            out.expression = non_symbol_children(children)[0][1]
+            return out
         }
         case 'formal_parameters': {
             out.children = non_symbol_children(children)
@@ -572,6 +595,7 @@ const convert = (cursor, children) => {
         }
         case 'program': {
             out.body = children.map((x) => x[1])
+            annotate_directives(out.body)
             return out
         }
         case 'if_statement': {
