@@ -64,10 +64,8 @@ test('smoke test', async () => {
 const pare_acorn_tree = (obj) =>
     JSON.parse(
         JSON.stringify(obj, function (key, value) {
-            if (this.type === 'Program' && key === 'sourceType')
-                return undefined
-            if (this.type === 'Literal' && ['bigint'].includes(key))
-                return undefined
+            if (this.type === 'Program' && key === 'sourceType') return undefined
+            if (this.type === 'Literal' && ['bigint'].includes(key)) return undefined
 
             return value
         })
@@ -94,12 +92,8 @@ describe('corpus test', () => {
         if (should_throw.some((shorter_name) => name.includes(shorter_name))) {
             test(`Should throw: ${name}`, async () => {
                 const text = await get_text()
-                await expect(
-                    async () => await prettier.format(text, acorn_opts)
-                ).rejects.toThrow()
-                await expect(
-                    async () => await prettier.format(text, ts_opts)
-                ).rejects.toThrow()
+                await expect(async () => await prettier.format(text, acorn_opts)).rejects.toThrow()
+                await expect(async () => await prettier.format(text, ts_opts)).rejects.toThrow()
             })
             return
         }

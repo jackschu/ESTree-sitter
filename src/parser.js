@@ -305,6 +305,26 @@ const convert = (cursor, children) => {
                 .map((x) => x[1])
             return out
         }
+        case 'field_definition': {
+            const key_child = findx_child(children, 'property', cursor.nodeType)
+            out.key = key_child
+
+            out.value = findx_child(children, 'value', cursor.nodeType)
+
+            out.computed = key_child.name.startsWith('[')
+            out.static = find_child(children, 'static') != null
+            return out
+        }
+        case 'class_body': {
+            out.body = non_symbol_children(children).map((x) => x[1])
+            return out
+        }
+        case 'class_declaration': {
+            out.id = findx_child(children, 'name', cursor.nodeType)
+            out.body = findx_child(children, 'body', cursor.nodeType)
+            out.superClass = find_child(children, 'class_heritage') ?? null
+            return out
+        }
         case 'escape_sequence':
         case 'string_fragment': {
             out.text = cursor.nodeText
@@ -387,13 +407,12 @@ const convert = (cursor, children) => {
         case 'pair':
         case 'pair_pattern': {
             const key_child = findx_child(children, 'key', cursor.nodeType)
-            out.computed = cursor.nodeText.startsWith('[')
             out.kind = 'init' // TODO need to support object getters
             out.method = false
             out.shorthand = false
             out.value = findx_child(children, 'value', cursor.nodeType)
             out.key = key_child
-            out.name = key_child.name
+            out.computed = key_child.name?.startsWith?.('[') ?? false
             return out
         }
         case 'property_identifier': {
@@ -588,6 +607,7 @@ const convert = (cursor, children) => {
         }
 
         default: {
+            //console.log('defaulting', cursor.nodeType)
             // TODO probably enumerate which ones we expect to hit here
             return apply_children(out, children)
         }
