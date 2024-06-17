@@ -7,6 +7,8 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('namespace_import', 'ImportNamespaceSpecifier')
+type_mapping.set('import_statement', 'ImportDeclaration')
 type_mapping.set('this', 'ThisExpression')
 type_mapping.set('class', 'ClassExpression')
 type_mapping.set('field_definition', 'PropertyDefinition')

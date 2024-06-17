@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import Parser from 'web-tree-sitter'
 import { type_mapping, field_map } from './renames'
 
+const THROW_ON_ERROR = true
+
 await Parser.init()
 const JavaScript = await Parser.Language.load('./vendored/tree-sitter-javascript.wasm')
 
@@ -253,6 +255,62 @@ const convert = (cursor, children) => {
                 out.specifiers = clause.children.map((x) => x[1])
             }
 
+            return out
+        }
+        case 'import_specifier': {
+            out.imported = findx_child(children, 'name', cursor.nodeType)
+            const local = find_child(children, 'alias')
+
+            out.local = local ?? out.imported
+
+            return out
+        }
+        case 'named_imports': {
+            out.children = non_symbol_children(children)
+            return out
+        }
+        case 'namespace_import': {
+            out.local = findx_child(children, 'identifier', cursor.nodeType)
+            return out
+        }
+        case 'import_clause': {
+            const relevant_children = non_symbol_children(children)
+            out.children = []
+            for (let [kind, node] of relevant_children) {
+                switch (kind) {
+                    case 'named_imports': {
+                        out.children.push(...node.children.map((x) => x[1]))
+                        continue
+                    }
+                    case 'namespace_import': {
+                        out.children.push(node)
+                        continue
+                    }
+                    case 'identifier': {
+                        out.children.push({
+                            start: node.start,
+                            end: node.end,
+                            range: node.range,
+                            loc: node.loc,
+                            type: 'ImportDefaultSpecifier',
+                            local: node,
+                        })
+                        continue
+                    }
+                }
+            }
+
+            return out
+        }
+        case 'import_statement': {
+            const import_specifier_node = find_child(children, 'import_clause', cursor.nodeType)
+            if (import_specifier_node) {
+                out.specifiers = import_specifier_node.children
+            } else {
+                out.specifiers = []
+            }
+
+            out.source = findx_child(children, 'source', cursor.nodeType)
             return out
         }
         case 'arguments': {
@@ -654,7 +712,11 @@ const convert = (cursor, children) => {
             out.name = cursor.nodeText
             return out
         }
-
+        case 'ERROR': {
+            if (THROW_ON_ERROR) {
+                throw new Error(`Error in parsing at ${JSON.stringify(out.loc)}`)
+            }
+        }
         default: {
             //console.log('defaulting', cursor.nodeType)
             // TODO probably enumerate which ones we expect to hit here
