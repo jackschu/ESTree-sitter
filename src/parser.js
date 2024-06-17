@@ -240,7 +240,7 @@ const convert = (cursor, children) => {
             if (find_child(children, '*') || namespace_child) {
                 out.type = 'ExportAllDeclaration'
                 out.source = findx_child(children, 'source', cursor.nodeType)
-                out.exported = namespace_child ?? null
+                out.exported = namespace_child?.name ?? null
             } else if (find_child(children, 'default')) {
                 out.type = 'ExportDefaultDeclaration'
                 const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
