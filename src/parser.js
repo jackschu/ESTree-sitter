@@ -681,6 +681,29 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'undefined': {
+            out.type = 'Identifier'
+            out.name = 'undefined'
+            return out
+        }
+        case 'null': {
+            out.raw = 'null'
+            out.type = 'Literal'
+            out.value = null
+            return out
+        }
+        case 'true': {
+            out.raw = 'true'
+            out.type = 'Literal'
+            out.value = true
+            return out
+        }
+        case 'false': {
+            out.raw = 'false'
+            out.type = 'Literal'
+            out.value = false
+            return out
+        }
         case 'statement_identifier': {
             out.name = cursor.nodeText
             return out
