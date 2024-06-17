@@ -477,6 +477,10 @@ const convert = (cursor, children) => {
             out.body = non_symbol_children(children).map((x) => x[1])
             return out
         }
+        case 'array_pattern': {
+            out.elements = non_symbol_children(children).map((x) => x[1])
+            return out
+        }
         case 'rest_pattern': {
             out.argument = children[1][1]
             return out
