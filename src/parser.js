@@ -682,6 +682,38 @@ const convert = (cursor, children) => {
             annotate_directives(out.body)
             return out
         }
+        case 'for_in_statement': {
+            if (findx_child(children, 'operator', cursor.nodeType) === 'of') {
+                out.await = find_child(children, 'await') != null
+                out.type = 'ForOfStatement'
+            }
+            const kind = find_child(children, 'kind')
+            if (kind != null) {
+                let id = findx_child(children, 'left', cursor.nodeType)
+
+                out.left = {
+                    type: 'VariableDeclaration',
+                    ...merge_position(kind, id),
+                    kind: kind.type.toLowerCase(),
+                    declarations: [
+                        {
+                            start: id.start,
+                            end: id.end,
+                            range: id.range,
+                            loc: id.loc,
+                            type: 'VariableDeclarator',
+                            id: id,
+                            init: null,
+                        },
+                    ],
+                }
+            } else {
+                out.left = findx_child(children, 'left', cursor.nodeType)
+            }
+            out.right = findx_child(children, 'right', cursor.nodeType)
+            out.body = findx_child(children, 'body', cursor.nodeType)
+            return out
+        }
         case 'if_statement': {
             const parenthesized_expression = findx_child(children, 'condition', cursor.nodeType)
 
@@ -720,7 +752,7 @@ const convert = (cursor, children) => {
         default: {
             //console.log('defaulting', cursor.nodeType)
             // TODO probably enumerate which ones we expect to hit here
-            return apply_children(out, children)
+            return apply_children(out, non_symbol_children(children))
         }
     }
 }
