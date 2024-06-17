@@ -78,7 +78,7 @@ function cull_parenthesized_expressions(out) {
 const useless_children = new Set()
 useless_children.add('regex')
 
-const symbol_children = new Set(['{', ',', '}', '(', ')', ':', '?', '${', '...', ';'])
+const symbol_children = new Set(['{', ',', '}', '(', ')', ':', '?', '${', '...', ';', '[', ']'])
 
 /**
  * @template T
@@ -519,6 +519,10 @@ const convert = (cursor, children) => {
         }
         case 'computed_property_name': {
             return non_symbol_children(children)[0][1]
+        }
+        case 'array': {
+            out.elements = non_symbol_children(children).map((x) => x[1])
+            return out
         }
         case 'sequence_expression': {
             out.expressions = non_symbol_children(children).map((x) => x[1])
