@@ -477,10 +477,6 @@ const convert = (cursor, children) => {
             out.body = non_symbol_children(children).map((x) => x[1])
             return out
         }
-        case 'array_pattern': {
-            out.elements = non_symbol_children(children).map((x) => x[1])
-            return out
-        }
         case 'rest_pattern': {
             out.argument = children[1][1]
             return out
@@ -524,8 +520,21 @@ const convert = (cursor, children) => {
         case 'computed_property_name': {
             return non_symbol_children(children)[0][1]
         }
+        case 'array_pattern':
         case 'array': {
-            out.elements = non_symbol_children(children).map((x) => x[1])
+            out.elements = children.reduce(
+                ([was_empty, acc], [key, val]) => {
+                    if (key === '[' || key === ']') return [true, acc]
+                    if (key === ',') {
+                        if (was_empty) acc.push(null)
+
+                        return [true, acc]
+                    }
+                    acc.push(val)
+                    return [false, acc]
+                },
+                [true, []]
+            )[1]
             return out
         }
         case 'sequence_expression': {
