@@ -560,7 +560,7 @@ const convert = (cursor, children) => {
 
             out.id = null
             out.generator = false
-            out.async = children[0][1].nodeText === 'async'
+            out.async = find_child(children, 'async') != null
 
             out.body = body
             return out
