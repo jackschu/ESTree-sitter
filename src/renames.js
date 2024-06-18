@@ -7,6 +7,8 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('generator_function_declaration', 'FunctionDeclaration')
+type_mapping.set('generator_function', 'FunctionExpression')
 type_mapping.set('array', 'ArrayExpression')
 type_mapping.set('namespace_import', 'ImportNamespaceSpecifier')
 type_mapping.set('import_statement', 'ImportDeclaration')

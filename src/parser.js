@@ -566,6 +566,11 @@ const convert = (cursor, children) => {
             children = non_symbol_children(children)
             return apply_children(out, children)
         }
+        case 'yield_expression': {
+            out.argument = non_symbol_children(children).find((x) => x[0] !== 'yield')?.[1] ?? null
+            out.delegate = find_child(children, '*') != null
+            return out
+        }
         case 'arrow_function': {
             const body = findx_child(children, 'body', 'arrow_function')
             out.expression = body.type !== 'BlockStatement'
@@ -587,9 +592,14 @@ const convert = (cursor, children) => {
             out.body = body
             return out
         }
+        case 'generator_function':
+        case 'generator_function_declaration':
         case 'function_expression':
         case 'function_declaration': {
-            if (cursor.nodeType === 'function_expression') {
+            if (
+                cursor.nodeType === 'function_expression' ||
+                cursor.nodeType === 'generator_function'
+            ) {
                 out.id = find_child(children, 'name') ?? null
             } else {
                 out.id = findx_child(children, 'name', cursor.nodeType)
@@ -598,7 +608,12 @@ const convert = (cursor, children) => {
                 (x) => x[1]
             )
             out.body = findx_child(children, 'body', cursor.nodeType)
-            out.generator = false
+            out.generator =
+                cursor.nodeType === 'generator_function' ||
+                cursor.nodeType === 'generator_function_declaration'
+
+            // Depricated field that we always set false
+            // https://github.com/estree/estree/blob/18fc6cc4be436548a8f86736907299ae850a1a26/deprecated.md#functions
             out.expression = false
             out.async = find_child(children, 'async') ?? false
             return out
