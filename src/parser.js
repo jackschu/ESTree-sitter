@@ -186,6 +186,14 @@ const cursor_to_loc = (cursor) => {
     }
 }
 
+const function_expression_to_declaration = (expression) => {
+    return {
+        ...expression,
+        type: 'FunctionDeclaration',
+        id: null,
+    }
+}
+
 /**
  * @param {Parser.TreeCursor} cursor
  * @param {unknown[]} children
@@ -243,8 +251,13 @@ const convert = (cursor, children) => {
                 out.exported = namespace_child?.name ?? null
             } else if (find_child(children, 'default')) {
                 out.type = 'ExportDefaultDeclaration'
-                const value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')
-                out.declaration = value[1]
+                let value = children.find((x) => x[0] === 'value' || x[0] === 'declaration')[1]
+                // TODO: drop when this is resolved
+                // https://github.com/tree-sitter/tree-sitter-javascript/issues/323
+                if (value.type === 'FunctionExpression') {
+                    value = function_expression_to_declaration(value)
+                }
+                out.declaration = value
             } else if (find_child(children, 'export_clause')) {
                 out.type = 'ExportNamedDeclaration'
                 out.declaration = null
@@ -574,13 +587,17 @@ const convert = (cursor, children) => {
             out.body = body
             return out
         }
+        case 'function_expression':
         case 'function_declaration': {
-            out.id = findx_child(children, 'name', cursor.nodeType)
+            if (cursor.nodeType === 'function_expression') {
+                out.id = find_child(children, 'name') ?? null
+            } else {
+                out.id = findx_child(children, 'name', cursor.nodeType)
+            }
             out.params = findx_child(children, 'parameters', cursor.nodeType).children.map(
                 (x) => x[1]
             )
             out.body = findx_child(children, 'body', cursor.nodeType)
-            out.async = findx_child(children, 'name', cursor.nodeType)
             out.generator = false
             out.expression = false
             out.async = find_child(children, 'async') ?? false
