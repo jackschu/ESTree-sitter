@@ -550,6 +550,24 @@ const convert = (cursor, children) => {
             )[1]
             return out
         }
+        case 'subscript_expression': {
+            out.object = findx_child(children, 'object', cursor.nodeType)
+            out.property = findx_child(children, 'index', cursor.nodeType)
+
+            out.computed = true
+            out.optional = find_child(children, 'optional_chain') ?? false
+
+            return out
+        }
+        case 'member_expression': {
+            out.object = findx_child(children, 'object', cursor.nodeType)
+            out.property = findx_child(children, 'property', cursor.nodeType)
+
+            out.computed = false
+            out.optional = find_child(children, 'optional_chain') ?? false
+
+            return out
+        }
         case 'sequence_expression': {
             out.expressions = non_symbol_children(children).map((x) => x[1])
             return out
@@ -596,14 +614,8 @@ const convert = (cursor, children) => {
         case 'generator_function_declaration':
         case 'function_expression':
         case 'function_declaration': {
-            if (
-                cursor.nodeType === 'function_expression' ||
-                cursor.nodeType === 'generator_function'
-            ) {
-                out.id = find_child(children, 'name') ?? null
-            } else {
-                out.id = findx_child(children, 'name', cursor.nodeType)
-            }
+            // allow null here for declarations in case of `export default function`
+            out.id = find_child(children, 'name') ?? null
             out.params = findx_child(children, 'parameters', cursor.nodeType).children.map(
                 (x) => x[1]
             )
