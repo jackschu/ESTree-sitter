@@ -796,17 +796,19 @@ const convert = (cursor, children) => {
             return out
         }
         case 'else_clause': {
-            out.body = children.find((x) => x[0] !== 'else')[1]
+            out.body = non_symbol_children(children).find((x) => x[0] !== 'else')[1]
             return out
         }
         case 'return_statement': {
-            const child_candidates = children.filter((x) => x[0] !== 'return').map((x) => x[1])
+            const child_candidates = non_symbol_children(children)
+                .filter((x) => x[0] !== 'return')
+                .map((x) => x[1])
             if (child_candidates.length > 1) {
                 throw new Error(
-                    'return with multiple expressions? ' + JSON.stringify(child_candidates)
+                    'return with multiple expressions? ' + JSON.stringify(child_candidates, null, 4)
                 )
             }
-            out.argument = child_candidates[0]
+            out.argument = child_candidates[0] ?? null
             return out
         }
         case 'new': {
