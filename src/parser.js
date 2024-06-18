@@ -402,14 +402,31 @@ const convert = (cursor, children) => {
             const key_child = findx_child(children, 'property', cursor.nodeType)
             out.key = key_child
 
-            out.value = findx_child(children, 'value', cursor.nodeType)
+            out.value = find_child(children, 'value', cursor.nodeType) ?? null
 
             out.computed = key_child.name.startsWith('[')
             out.static = find_child(children, 'static') != null
+
             return out
         }
         case 'class_body': {
-            out.body = non_symbol_children(children).map((x) => x[1])
+            // ';' should be considered part of the region for property defintion
+            // but tree-sitter AST doesnt do this for conflict trickery
+            out.body = children.flatMap(([kind, node], idx) => {
+                if (kind === '{' || kind === ';' || kind === '}') return []
+                const next_child = children.at(idx + 1)
+                if (!next_child) return [node]
+                if (node.type === 'PropertyDefinition' && next_child[0] === ';') {
+                    return [
+                        {
+                            ...node,
+                            ...merge_position(node, next_child[1]),
+                        },
+                    ]
+                }
+                return [node]
+            })
+
             return out
         }
         case 'class': {
