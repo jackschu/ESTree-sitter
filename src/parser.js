@@ -698,9 +698,11 @@ const convert = (cursor, children) => {
 
             return out
         }
+
+        case 'hash_bang_line':
         case 'html_comment':
         case 'comment': {
-            if (cursor.nodeText.startsWith('//')) {
+            if (cursor.nodeText.startsWith('//') || cursor.nodeText.startsWith('#!')) {
                 out.type = 'Line'
                 out.value = cursor.nodeText.slice(2)
             } else if (cursor.nodeText.startsWith('/*')) {
