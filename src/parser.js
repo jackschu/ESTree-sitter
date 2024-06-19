@@ -561,7 +561,6 @@ const convert = (cursor, children) => {
             } else {
                 out.computed = false
             }
-            console.log('here', key_child)
             out.kind = 'init' // TODO need to support object getters
             out.method = false
             out.shorthand = false
@@ -826,6 +825,28 @@ const convert = (cursor, children) => {
         case 'program': {
             out.body = children.map((x) => x[1])
             annotate_directives(out.body)
+            return out
+        }
+        case 'for_statement': {
+            out.init = findx_child(children, 'initializer', cursor.nodeType)
+            if (out.init.type === 'EmptyStatement') out.init = null
+            else if (out.init.type === 'ExpressionStatement') out.init = out.init.expression
+            else {
+                const last_node = out.init.declarations?.at(-1)
+                if (last_node) {
+                    out.init.end = last_node.end
+                    out.init.loc.end = last_node.loc.end
+                    out.init.range[1] = last_node.range[1]
+                }
+            }
+
+            out.test = findx_child(children, 'condition', cursor.nodeType)
+            if (out.test.type === 'EmptyStatement') out.test = null
+            else if (out.test.type === 'ExpressionStatement') out.test = out.test.expression
+
+            out.update = find_child(children, 'increment') ?? null
+
+            out.body = findx_child(children, 'body', cursor.nodeType)
             return out
         }
         case 'for_in_statement': {
