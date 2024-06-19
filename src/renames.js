@@ -7,6 +7,7 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('switch_default', 'SwitchCase')
 type_mapping.set('subscript_expression', 'MemberExpression')
 type_mapping.set('generator_function_declaration', 'FunctionDeclaration')
 type_mapping.set('generator_function', 'FunctionExpression')

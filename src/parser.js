@@ -835,6 +835,29 @@ const convert = (cursor, children) => {
         case 'finally_clause': {
             return findx_child(children, 'body', cursor.nodeType)
         }
+        case 'switch_statement': {
+            out.discriminant = findx_child(children, 'value', cursor.nodeType)
+            out.cases = findx_child(children, 'body', cursor.nodeType).children.map((x) => x[1])
+
+            return out
+        }
+        case 'switch_body': {
+            out.children = non_symbol_children(children)
+            return out
+        }
+        case 'switch_case':
+        case 'switch_default': {
+            out.test = find_child(children, 'value') ?? null
+            const body = find_child(children, 'body', cursor.nodeType)
+            out.consequent = body ? [body] : []
+
+            return out
+        }
+        case 'break_statement': {
+            out.label = find_child(children, 'label') ?? null
+
+            return out
+        }
         case 'if_statement': {
             const parenthesized_expression = findx_child(children, 'condition', cursor.nodeType)
 
