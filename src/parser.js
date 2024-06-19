@@ -360,9 +360,12 @@ const convert = (cursor, children) => {
         }
         case 'new_expression': {
             out.callee = findx_child(children, 'constructor', 'new_expression')
-            out.arguments = findx_child(children, 'arguments', 'new_expression').children.map(
-                (x) => x[1]
-            )
+            const args_node = find_child(children, 'arguments')
+            if (args_node) {
+                out.arguments = args_node.children.map((x) => x[1])
+            } else {
+                out.arguments = []
+            }
             return out
         }
         case 'call_expression': {
