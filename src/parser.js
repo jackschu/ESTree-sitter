@@ -815,6 +815,21 @@ const convert = (cursor, children) => {
             out.body = findx_child(children, 'body', cursor.nodeType)
             return out
         }
+        case 'try_statement': {
+            out.block = findx_child(children, 'body', cursor.nodeType)
+            out.handler = find_child(children, 'handler') ?? null
+            out.finalizer = find_child(children, 'finalizer') ?? null
+            return out
+        }
+        case 'catch_clause': {
+            out.param = find_child(children, 'parameter') ?? null
+            out.body = findx_child(children, 'body', cursor.nodeType)
+
+            return out
+        }
+        case 'finally_clause': {
+            return findx_child(children, 'body', cursor.nodeType)
+        }
         case 'if_statement': {
             const parenthesized_expression = findx_child(children, 'condition', cursor.nodeType)
 
