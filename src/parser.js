@@ -402,12 +402,17 @@ const convert = (cursor, children) => {
             return out
         }
         case 'field_definition': {
-            const key_child = findx_child(children, 'property', cursor.nodeType)
+            let key_child = findx_child(children, 'property', cursor.nodeType)
+            if (key_child.computed) {
+                out.computed = true
+                key_child = key_child.child
+            } else {
+                out.computed = false
+            }
+
             out.key = key_child
 
             out.value = find_child(children, 'value', cursor.nodeType) ?? null
-
-            out.computed = key_child.name.startsWith('[')
             out.static = find_child(children, 'static') != null
 
             return out
@@ -549,16 +554,23 @@ const convert = (cursor, children) => {
 
         case 'pair':
         case 'pair_pattern': {
-            const key_child = findx_child(children, 'key', cursor.nodeType)
+            let key_child = findx_child(children, 'key', cursor.nodeType)
+            if (key_child.computed) {
+                out.computed = true
+                key_child = key_child.child
+            } else {
+                out.computed = false
+            }
+            console.log('here', key_child)
             out.kind = 'init' // TODO need to support object getters
             out.method = false
             out.shorthand = false
             out.value = findx_child(children, 'value', cursor.nodeType)
             out.key = key_child
-            out.computed = key_child.name?.startsWith?.('[') ?? false
             return out
         }
         case 'property_identifier': {
+            out.computed = false
             out.name = cursor.nodeText
             return out
         }
@@ -571,7 +583,9 @@ const convert = (cursor, children) => {
             return out
         }
         case 'computed_property_name': {
-            return non_symbol_children(children)[0][1]
+            out.computed = true
+            out.child = non_symbol_children(children)[0][1]
+            return out
         }
         case 'array_pattern':
         case 'array': {
@@ -682,9 +696,15 @@ const convert = (cursor, children) => {
                 out.kind = 'method'
             } // TODO: constructor kind
 
-            out.computed = cursor.nodeText.startsWith('[')
             out.static = child_types.includes('static')
-            out.key = findx_child(children, 'name', 'method_definition')
+            let key_child = findx_child(children, 'name', 'method_definition')
+            if (key_child.computed) {
+                out.computed = true
+                key_child = key_child.child
+            } else {
+                out.computed = false
+            }
+            out.key = key_child
             const body = findx_child(children, 'body', 'method_definition')
             const params = findx_child(children, 'parameters', 'method_definition')
             out.value = {
