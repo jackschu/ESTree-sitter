@@ -457,18 +457,38 @@ const convert = (cursor, children) => {
             out.child = non_symbol_children(children)[0][1]
             return out
         }
+
         case 'template_string': {
+            // yeah this is pretty ugly, deserves a refactor
             let was_string = true
+            let is_empty = true
             const todo_quasis = []
             let staging_quasis = []
             out.expressions = []
-            for (let child of children) {
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i]
+                is_empty &&= child[0] === '`'
                 const is_expr = child[0] === 'template_substitution'
                 if (was_string && (is_expr || child[0] === '`')) {
                     if (staging_quasis.length) {
                         todo_quasis.push(staging_quasis)
                     }
                     staging_quasis = []
+                }
+                if ((!was_string || is_empty) && child[0] === '`' && i !== 0) {
+                    const start = child[1].start
+                    todo_quasis.push([
+                        [
+                            'string_fragment',
+                            {
+                                start,
+                                end: start,
+                                loc: { start: child[1].loc.start, end: child[1].loc.start },
+                                range: [start, start],
+                                text: '',
+                            },
+                        ],
+                    ])
                 }
                 if (is_expr) {
                     out.expressions.push(child[1].child)
