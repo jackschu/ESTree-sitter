@@ -437,6 +437,10 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'class_heritage': {
+            out.expression = non_symbol_children(children).filter((x) => x[0] !== 'extends')[0][1]
+            return out
+        }
         case 'class': {
             if (children.length === 0) {
                 //'class' overlaps with the literal
@@ -444,13 +448,13 @@ const convert = (cursor, children) => {
             }
             out.body = findx_child(children, 'body', cursor.nodeType)
             out.id = find_child(children, 'name') ?? null
-            out.superClass = find_child(children, 'class_heritage') ?? null
+            out.superClass = find_child(children, 'class_heritage')?.expression ?? null
             return out
         }
         case 'class_declaration': {
             out.id = findx_child(children, 'name', cursor.nodeType)
             out.body = findx_child(children, 'body', cursor.nodeType)
-            out.superClass = find_child(children, 'class_heritage') ?? null
+            out.superClass = find_child(children, 'class_heritage')?.expression ?? null
             return out
         }
         case 'escape_sequence':
@@ -785,7 +789,8 @@ const convert = (cursor, children) => {
         case 'number': {
             out.raw = cursor.nodeText
             if (out.raw.endsWith('n')) {
-                out.value = BigInt(out.raw)
+                out.value = BigInt(out.raw.slice(0, -1))
+                out.bigint = out.raw.slice(0, -1)
             } else if (out.raw.startsWith('0b') || out.raw.startsWith('0B')) {
                 out.value = parseInt(cursor.nodeText, 2)
             } else if (out.raw.startsWith('0x') || out.raw.startsWith('0X')) {

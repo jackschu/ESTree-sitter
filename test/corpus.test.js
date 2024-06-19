@@ -61,15 +61,21 @@ test('smoke test', async () => {
     expect(formatted_acorn).toBe('lodash();\n')
 })
 
-const pare_acorn_tree = (obj) =>
-    JSON.parse(
+const pare_acorn_tree = (obj) => {
+    return JSON.parse(
         JSON.stringify(obj, function (key, value) {
             if (this.type === 'Program' && key === 'sourceType') return undefined
-            if (this.type === 'Literal' && ['bigint'].includes(key)) return undefined
-
+            if (typeof value === 'bigint') return `SIGNALBigInt${value.toString()}`
             return value
-        })
+        }),
+        function (key, value) {
+            if (typeof value === 'string' && value.startsWith('SIGNALBigInt')) {
+                return BigInt(value.slice('SIGNALBigInt'.length))
+            }
+            return value
+        }
     )
+}
 
 describe('corpus test', () => {
     files.map(({ basename: name, filename }) => {
@@ -110,7 +116,14 @@ describe('corpus test', () => {
             const ts_ast = ts_parse(text)
 
             if (DEBUG) {
-                let tree = JSON.stringify(ts_ast, null, 4)
+                let tree = JSON.stringify(
+                    ts_ast,
+                    function (key, value) {
+                        if (typeof value === 'bigint') return `BigInt(${value.toString()})`
+                        return value
+                    },
+                    4
+                )
                 console.log(tree)
                 await writeFile('./temp_estree.json', tree)
             }
@@ -118,7 +131,14 @@ describe('corpus test', () => {
             acorn_ast = pare_acorn_tree(acorn_ast)
             if (DEBUG) {
                 console.log('acorn_ast;')
-                let tree = JSON.stringify(acorn_ast, null, 4)
+                let tree = JSON.stringify(
+                    acorn_ast,
+                    function (key, value) {
+                        if (typeof value === 'bigint') return `BigInt(${value.toString()})`
+                        return value
+                    },
+                    4
+                )
                 console.log(tree)
                 await writeFile('./temp_acorn.json', tree)
             }
