@@ -569,7 +569,6 @@ const convert = (cursor, children) => {
             return out
         }
         case 'property_identifier': {
-            out.computed = false
             out.name = cursor.nodeText
             return out
         }
@@ -601,6 +600,12 @@ const convert = (cursor, children) => {
                 },
                 [true, []]
             )[1]
+            return out
+        }
+        case 'unary_expression': {
+            out.operator = findx_child(children, 'operator', cursor.nodeType)
+            out.argument = findx_child(children, 'argument', cursor.nodeType)
+            out.prefix = true
             return out
         }
         case 'subscript_expression': {
