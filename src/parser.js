@@ -647,7 +647,7 @@ const convert = (cursor, children) => {
             // Depricated field that we always set false
             // https://github.com/estree/estree/blob/18fc6cc4be436548a8f86736907299ae850a1a26/deprecated.md#functions
             out.expression = false
-            out.async = find_child(children, 'async') ?? false
+            out.async = find_child(children, 'async') != null
             return out
         }
         case 'method_definition': {
