@@ -23,6 +23,7 @@ export const parse = (text) => {
     const ts_ast = parser.parse(text)
 
     let [_, out_obj] = traverse_tree(ts_ast.walk())
+    out_obj = insert_chain_expressions(out_obj)
     out_obj = cull_parenthesized_expressions(out_obj)
     out_obj.comments = ts_comments
 
@@ -55,6 +56,52 @@ const traverse_tree = (cursor) => {
         //        console.log('no field for node type', name)
     }
     return [name, out]
+}
+
+/**
+ * @param {object} out
+ */
+function insert_chain_expressions(out) {
+    for (let [key, val] of Object.entries(out)) {
+        if (typeof val !== 'object' || val === null) {
+            continue
+        }
+
+        const modified = insert_chain_expressions(val)
+        out[key] = modified
+    }
+
+    if (out.type === 'MemberExpression' && out.object.type === 'ChainExpression') {
+        out.object = out.object.expression
+        out = {
+            start: out.start,
+            end: out.end,
+            range: out.range,
+            loc: out.loc,
+            type: 'ChainExpression',
+            expression: out,
+        }
+    } else if (out.type === 'CallExpression' && out.callee.type === 'ChainExpression') {
+        out.callee = out.callee.expression
+        out = {
+            start: out.start,
+            end: out.end,
+            range: out.range,
+            loc: out.loc,
+            type: 'ChainExpression',
+            expression: out,
+        }
+    } else if ((out.type === 'MemberExpression' || out.type === 'CallExpression') && out.optional) {
+        out = {
+            start: out.start,
+            end: out.end,
+            range: out.range,
+            loc: out.loc,
+            type: 'ChainExpression',
+            expression: out,
+        }
+    }
+    return out
 }
 
 /**
@@ -617,7 +664,20 @@ const convert = (cursor, children) => {
             out.property = findx_child(children, 'index', cursor.nodeType)
 
             out.computed = true
-            out.optional = find_child(children, 'optional_chain') ?? false
+            const optional_child = find_child(children, 'optional_chain')
+            out.optional = optional_child != null
+            console.log('here', children, out.optional)
+            // if (out.optional) {
+            //     out = {
+            //         start: out.start,
+            //         end: out.end,
+            //         loc: out.loc,
+            //         range: out.range,
+            //         type: 'ChainExpression',
+            //         expression: out,
+            //     }
+            // }
+            console.log(out.type, out.range)
 
             return out
         }
@@ -626,7 +686,18 @@ const convert = (cursor, children) => {
             out.property = findx_child(children, 'property', cursor.nodeType)
 
             out.computed = false
-            out.optional = find_child(children, 'optional_chain') ?? false
+            const optional_child = find_child(children, 'optional_chain')
+            out.optional = optional_child != null
+            // if (out.optional) {
+            //     out = {
+            //         start: out.start,
+            //         end: out.end,
+            //         loc: out.loc,
+            //         range: out.range,
+            //         type: 'ChainExpression',
+            //         expression: out,
+            //     }
+            // }
 
             return out
         }
