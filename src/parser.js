@@ -417,14 +417,26 @@ const convert = (cursor, children) => {
         }
         case 'call_expression': {
             const args = findx_child(children, 'arguments', 'call_expression')
+            const func = findx_child(children, 'function', 'call_expression')
             // Tree sitter reads template literals as call expression, handle that here
             if (args.type === 'TemplateLiteral') {
-                out.tag = findx_child(children, 'function', 'call_expression')
-                out.quasi = args
                 out.type = 'TaggedTemplateExpression'
+                out.tag = func
+                out.quasi = args
+            } else if (func.type === 'Import') {
+                // Tree sitter also has no separate node for import expression
+                if (args.children.length !== 1) {
+                    throw new Error(
+                        `Found import expression with non-one args ${args.children.map(
+                            (x) => x[0]
+                        )}`
+                    )
+                }
+                out.type = 'ImportExpression'
+                out.source = args.children[0][1]
             } else {
                 out.optional = find_child(children, 'optional_chain') !== undefined
-                out.callee = findx_child(children, 'function', 'call_expression')
+                out.callee = func
                 out.arguments = args.children.map((x) => x[1])
             }
             return out
