@@ -666,18 +666,6 @@ const convert = (cursor, children) => {
             out.computed = true
             const optional_child = find_child(children, 'optional_chain')
             out.optional = optional_child != null
-            console.log('here', children, out.optional)
-            // if (out.optional) {
-            //     out = {
-            //         start: out.start,
-            //         end: out.end,
-            //         loc: out.loc,
-            //         range: out.range,
-            //         type: 'ChainExpression',
-            //         expression: out,
-            //     }
-            // }
-            console.log(out.type, out.range)
 
             return out
         }
@@ -688,16 +676,6 @@ const convert = (cursor, children) => {
             out.computed = false
             const optional_child = find_child(children, 'optional_chain')
             out.optional = optional_child != null
-            // if (out.optional) {
-            //     out = {
-            //         start: out.start,
-            //         end: out.end,
-            //         loc: out.loc,
-            //         range: out.range,
-            //         type: 'ChainExpression',
-            //         expression: out,
-            //     }
-            // }
 
             return out
         }
