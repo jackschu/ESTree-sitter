@@ -619,6 +619,10 @@ const convert = (cursor, children) => {
             out.key = key_child
             return out
         }
+        case 'private_property_identifier': {
+            out.name = cursor.nodeText.slice(1)
+            return out
+        }
         case 'property_identifier': {
             out.name = cursor.nodeText
             return out
