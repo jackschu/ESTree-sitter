@@ -122,6 +122,25 @@ function cull_parenthesized_expressions(out) {
     return out
 }
 
+const adjust_jsx_member_expr = (obj) => {
+    if (obj.type === 'Identifier') {
+        obj.type = 'JSXIdentifier'
+        return obj
+    }
+    obj.type = 'JSXMemberExpression'
+    obj.object = adjust_jsx_member_expr(obj.object)
+    obj.property.type = 'JSXIdentifier'
+    return obj
+}
+
+const adjust_jsx_name = (obj) => {
+    if (!obj?.name) return obj
+    if (obj.name.type === 'Identifier') obj.name.type = 'JSXIdentifier'
+    if (obj.name.type !== 'MemberExpression') return obj
+    obj.name = adjust_jsx_member_expr(obj.name)
+    return obj
+}
+
 const useless_children = new Set()
 useless_children.add('regex')
 
@@ -840,7 +859,7 @@ const convert = (cursor, children) => {
         }
         case 'jsx_self_closing_element': {
             const name = findx_child(children, 'name', cursor.nodeType)
-            if (name.type === 'Identifier') name.type = 'JSXIdentifier' //wrong
+
             out.children = []
             out.openingElement = {
                 start: out.start,
@@ -852,13 +871,14 @@ const convert = (cursor, children) => {
                 name: name,
                 selfClosing: true,
             }
+            out.openingElement = adjust_jsx_name(out.openingElement)
             out.closingElement = null
 
             return out
         }
         case 'jsx_opening_element': {
             out.name = find_child(children, 'name')
-            if (out.name && out.name.type === 'Identifier') out.name.type = 'JSXIdentifier' //wrong
+            out = adjust_jsx_name(out)
 
             out.attributes = children.filter((x) => x[0] === 'attribute').map((x) => x[1])
 
@@ -866,7 +886,7 @@ const convert = (cursor, children) => {
         }
         case 'jsx_closing_element': {
             out.name = find_child(children, 'name')
-            if (out.name && out.name.type === 'Identifier') out.name.type = 'JSXIdentifier' //wrong
+            out = adjust_jsx_name(out)
             return out
         }
         case 'jsx_namespace_name': {
