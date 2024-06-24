@@ -186,7 +186,14 @@ function find_child(children, name) {
     return children.find((x) => x[0] === name)?.[1]
 }
 
-function capitalize(string) {
+/**
+ * @param {string} string
+ * @returns {string}
+ */
+function stylistic_capitalize(string) {
+    if (string.startsWith('jsx')) {
+        return `JSX${string.charAt(3).toUpperCase()}${string.slice(4)}`
+    }
     return string.charAt(0).toUpperCase() + string.slice(1)
 }
 
@@ -272,7 +279,7 @@ const convert = (cursor, children) => {
         type_mapping.get(cursor.nodeType) ??
         cursor.nodeType
             .split('_')
-            .map((word) => capitalize(word))
+            .map((word) => stylistic_capitalize(word))
             .join('')
     switch (cursor.nodeType) {
         case 'export_clause': {
@@ -833,7 +840,7 @@ const convert = (cursor, children) => {
         }
         case 'jsx_self_closing_element': {
             const name = findx_child(children, 'name', cursor.nodeType)
-            name.type = 'JSXIdentifier' //wrong
+            if (name.type === 'Identifier') name.type = 'JSXIdentifier' //wrong
             out.children = []
             out.openingElement = {
                 start: out.start,
@@ -851,7 +858,7 @@ const convert = (cursor, children) => {
         }
         case 'jsx_opening_element': {
             out.name = find_child(children, 'name')
-            out.name.type = 'JSXIdentifier' // wrong
+            if (out.name && out.name.type === 'Identifier') out.name.type = 'JSXIdentifier' //wrong
 
             out.attributes = children.filter((x) => x[0] === 'attribute').map((x) => x[1])
 
@@ -859,7 +866,23 @@ const convert = (cursor, children) => {
         }
         case 'jsx_closing_element': {
             out.name = find_child(children, 'name')
-            out.name.type = 'JSXIdentifier' //wrong
+            if (out.name && out.name.type === 'Identifier') out.name.type = 'JSXIdentifier' //wrong
+            return out
+        }
+        case 'jsx_namespace_name': {
+            const relevant = children.filter((x) => x[0] !== ':')
+            if (relevant.length !== 2) {
+                throw new Error(
+                    `jsx namespaced name found innapropriate # children ${children.map(
+                        (x) => x[0]
+                    )}`
+                )
+            }
+            out.namespace = relevant[0][1]
+            out.namespace.type = 'JSXIdentifier'
+            out.name = relevant[1][1]
+            out.name.type = 'JSXIdentifier'
+
             return out
         }
 
