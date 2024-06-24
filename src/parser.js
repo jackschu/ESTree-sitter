@@ -821,6 +821,47 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'jsx_element': {
+            out.openingElement = findx_child(children, 'open_tag', cursor.nodeType)
+            out.children = non_symbol_children(children)
+                .filter((x) => x[0] !== 'open_tag' && x[0] !== 'close_tag')
+                .map((x) => x[1])
+            out.closingElement = findx_child(children, 'close_tag', cursor.nodeType)
+            out.openingElement.selfClosing = false
+
+            return out
+        }
+        case 'jsx_self_closing_element': {
+            const name = findx_child(children, 'name', cursor.nodeType)
+            name.type = 'JSXIdentifier' //wrong
+            out.children = []
+            out.openingElement = {
+                start: out.start,
+                end: out.end,
+                attributes: children.filter((x) => x[0] === 'attribute').map((x) => x[1]),
+                range: out.range,
+                loc: out.loc,
+                type: 'JSXOpeningElement',
+                name: name,
+                selfClosing: true,
+            }
+            out.closingElement = null
+
+            return out
+        }
+        case 'jsx_opening_element': {
+            out.name = find_child(children, 'name')
+            out.name.type = 'JSXIdentifier' // wrong
+
+            out.attributes = children.filter((x) => x[0] === 'attribute').map((x) => x[1])
+
+            return out
+        }
+        case 'jsx_closing_element': {
+            out.name = find_child(children, 'name')
+            out.name.type = 'JSXIdentifier' //wrong
+            return out
+        }
 
         case 'hash_bang_line':
         case 'html_comment':
@@ -854,6 +895,11 @@ const convert = (cursor, children) => {
         }
         case 'object': {
             out.properties = non_symbol_children(children).map((x) => x[1])
+            return out
+        }
+        case 'jsx_text': {
+            out.raw = cursor.nodeText
+            out.value = cursor.nodeText
             return out
         }
         case 'string': {
