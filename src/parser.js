@@ -673,6 +673,12 @@ const convert = (cursor, children) => {
             )[1]
             return out
         }
+        case 'update_expression': {
+            out.operator = findx_child(children, 'operator', cursor.nodeType)
+            out.argument = findx_child(children, 'argument', cursor.nodeType)
+            out.prefix = out.operator.start < out.argument.start
+            return out
+        }
         case 'unary_expression': {
             out.operator = findx_child(children, 'operator', cursor.nodeType)
             out.argument = findx_child(children, 'argument', cursor.nodeType)
