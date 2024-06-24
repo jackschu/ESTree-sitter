@@ -460,6 +460,10 @@ const convert = (cursor, children) => {
                 .map((x) => x[1])
             return out
         }
+        case 'class_static_block': {
+            out.body = findx_child(children, 'body', cursor.nodeType).body
+            return out
+        }
         case 'field_definition': {
             let key_child = findx_child(children, 'property', cursor.nodeType)
             if (key_child.computed) {
