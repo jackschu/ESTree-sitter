@@ -7,6 +7,7 @@ type_mapping.set('shorthand_property_identifier_pattern', 'Property')
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
 
+type_mapping.set('jsx_expression', 'JSXExpressionContainer')
 type_mapping.set('jsx_namespace_name', 'JSXNamespacedName')
 type_mapping.set('jsx_self_closing_element', 'JSXElement')
 type_mapping.set('jsx_closing_element', 'JSXClosingElement')

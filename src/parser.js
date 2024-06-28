@@ -857,6 +857,47 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'jsx_attribute': {
+            out.value = null
+            for (let child of non_symbol_children(children)) {
+                switch (child[0]) {
+                    // name
+                    case 'jsx_namespace_name': {
+                        out.name = child[1]
+                        break
+                    }
+                    case 'property_identifier': {
+                        out.name = child[1]
+                        out.name.type = 'JSXIdentifier'
+                        break
+                    }
+                    // value
+                    case 'string':
+                    case 'jsx_expression':
+                    case 'jsx_element':
+                    case 'jsx_self_closing_element': {
+                        out.value = child[1]
+                        break
+                    }
+                }
+            }
+            return out
+        }
+        case 'jsx_expression': {
+            out.expression = non_symbol_children(children).at(0)?.[1]
+            if (out.expression == null) {
+                const child = findx_child(children, '{', cursor.nodeType)
+                const start = child.start
+                out.expression = {
+                    start,
+                    end: start,
+                    loc: { start: child.loc.start, end: child.loc.start },
+                    range: [start, start],
+                    type: 'JSXEmptyExpression',
+                }
+            }
+            return out
+        }
         case 'jsx_self_closing_element': {
             const name = findx_child(children, 'name', cursor.nodeType)
 
