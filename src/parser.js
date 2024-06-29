@@ -993,19 +993,45 @@ const convert = (cursor, children) => {
         }
         case 'number': {
             out.raw = cursor.nodeText
-            if (out.raw.endsWith('n')) {
-                out.value = BigInt(out.raw.slice(0, -1))
-                out.bigint = out.raw.slice(0, -1)
-            } else if (out.raw.startsWith('0b') || out.raw.startsWith('0B')) {
-                out.value = parseInt(cursor.nodeText, 2)
+
+            const text = cursor.nodeText
+                .split('')
+                .filter((x) => x !== '_')
+                .join('')
+
+            const is_big_int = out.raw.endsWith('n')
+
+            let base
+            if (out.raw.startsWith('0b') || out.raw.startsWith('0B')) {
+                base = 2
             } else if (out.raw.startsWith('0x') || out.raw.startsWith('0X')) {
-                out.value = parseInt(cursor.nodeText, 16)
-            } else if (out.raw.startsWith('0.')) {
-                out.value = parseFloat(cursor.nodeText)
+                base = 16
+            } else if (out.raw.startsWith('0.') || out.raw.startsWith('.')) {
+                base = 10
             } else if (out.raw.startsWith('0')) {
-                out.value = parseInt(cursor.nodeText, 8)
+                if (
+                    out.raw.includes('8') ||
+                    out.raw.includes('9') ||
+                    text === '0' ||
+                    text === '0n'
+                ) {
+                    base = 10
+                } else {
+                    base = 8
+                }
             } else {
-                out.value = parseInt(cursor.nodeText)
+                base = 10
+            }
+
+            if (base == 10) {
+                if (is_big_int) {
+                    out.value = BigInt(text.slice(0, -1))
+                    out.bigint = out.raw.slice(0, -1)
+                } else {
+                    out.value = Number(text)
+                }
+            } else {
+                out.value = parseInt(text, base)
             }
 
             return out
