@@ -1,11 +1,12 @@
 export const type_mapping = new Map()
 
-type_mapping.set('shorthand_property_identifier', 'Property')
-type_mapping.set('shorthand_property_identifier_pattern', 'Property')
+type_mapping.set('shorthand_property_identifier', 'Identifier')
+type_mapping.set('shorthand_property_identifier_pattern', 'Identifier')
 
 // one of the weirder ones, apparently object is the only valid parent of pair_pattern
 type_mapping.set('pair', 'Property')
 type_mapping.set('pair_pattern', 'Property')
+type_mapping.set('object_assignment_pattern', 'Property')
 
 type_mapping.set('jsx_expression', 'JSXExpressionContainer')
 type_mapping.set('jsx_namespace_name', 'JSXNamespacedName')

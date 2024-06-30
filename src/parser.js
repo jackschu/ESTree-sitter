@@ -141,6 +141,20 @@ const adjust_jsx_name = (obj) => {
     return obj
 }
 
+const shorthand_to_property = (id) => ({
+    start: id.start,
+    end: id.end,
+    loc: id.loc,
+    range: id.range,
+    type: 'Property',
+    computed: false,
+    kind: 'init',
+    method: false,
+    shorthand: true,
+    value: id,
+    key: id,
+})
+
 const useless_children = new Set()
 useless_children.add('regex')
 
@@ -632,19 +646,22 @@ const convert = (cursor, children) => {
             out.argument = children[1][1]
             return out
         }
-        case 'shorthand_property_identifier':
-        case 'shorthand_property_identifier_pattern': {
-            out.name = cursor.nodeText
-            const fake_child = { ...out, type: 'Identifier' }
+        case 'object_assignment_pattern': {
+            const left = findx_child(children, 'left', cursor.nodeType)
+            out.value = {
+                ...out,
+                type: 'AssignmentPattern',
+                left,
+                right: findx_child(children, 'right', cursor.nodeType),
+            }
+
+            out.key = left
             out.computed = false
             out.kind = 'init'
             out.method = false
             out.shorthand = true
-            out.value = fake_child
-            out.key = fake_child
             return out
         }
-
         case 'pair':
         case 'pair_pattern': {
             let key_child = findx_child(children, 'key', cursor.nodeType)
@@ -670,7 +687,14 @@ const convert = (cursor, children) => {
             return out
         }
         case 'object_pattern': {
-            out.properties = non_symbol_children(children).map((x) => x[1])
+            out.properties = non_symbol_children(children)
+                .map(([kind, id]) => {
+                    if (!kind.startsWith('shorthand')) {
+                        return [kind, id]
+                    }
+                    return [kind, shorthand_to_property(id)]
+                })
+                .map((x) => x[1])
             return out
         }
         case 'spread_element': {
@@ -978,7 +1002,14 @@ const convert = (cursor, children) => {
             return out
         }
         case 'object': {
-            out.properties = non_symbol_children(children).map((x) => x[1])
+            out.properties = non_symbol_children(children)
+                .map(([kind, id]) => {
+                    if (!kind.startsWith('shorthand')) {
+                        return [kind, id]
+                    }
+                    return [kind, shorthand_to_property(id)]
+                })
+                .map((x) => x[1])
             return out
         }
         case 'jsx_text': {
@@ -1188,6 +1219,8 @@ const convert = (cursor, children) => {
         case 'new': {
             return null
         }
+        case 'shorthand_property_identifier':
+        case 'shorthand_property_identifier_pattern':
         case 'identifier': {
             out.name = cursor.nodeText
             return out
