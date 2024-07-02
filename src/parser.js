@@ -204,7 +204,12 @@ function annotate_directives(body) {
  */
 function apply_children(out, children) {
     for (let pair of children) {
-        out[field_map.get(pair[0]) ?? pair[0]] = pair[1]
+        const key = field_map.get(pair[0]) ?? pair[0]
+        if (key === 'operator') {
+            out[key] = pair[1].text
+        } else {
+            out[key] = pair[1]
+        }
     }
     return out
 }
@@ -286,10 +291,6 @@ const function_expression_to_declaration = (expression) => {
  * @param {unknown[]} children
  */
 const convert = (cursor, children) => {
-    if (cursor.currentFieldName === 'operator') {
-        return cursor.nodeText
-    }
-
     // the estee mob would like us to have our ranges avoid comment children
     // in strangely specific scenarios
     const ts_children = cursor.currentNode.children
@@ -308,6 +309,12 @@ const convert = (cursor, children) => {
     if (avoid_comment_child) {
         out = merge_position(out, cursor_to_loc(avoid_comment_child))
     }
+
+    if (cursor.currentFieldName === 'operator') {
+        out.text = cursor.nodeText
+        return out
+    }
+
     out.type =
         type_mapping.get(cursor.nodeType) ??
         cursor.nodeType
@@ -724,13 +731,15 @@ const convert = (cursor, children) => {
             return out
         }
         case 'update_expression': {
-            out.operator = findx_child(children, 'operator', cursor.nodeType)
+            const operator = findx_child(children, 'operator', cursor.nodeType)
+            out.operator = operator.text
             out.argument = findx_child(children, 'argument', cursor.nodeType)
-            out.prefix = out.operator.start < out.argument.start
+            out.prefix = operator.start < out.argument.start
             return out
         }
         case 'unary_expression': {
-            out.operator = findx_child(children, 'operator', cursor.nodeType)
+            const operator = findx_child(children, 'operator', cursor.nodeType)
+            out.operator = operator.text
             out.argument = findx_child(children, 'argument', cursor.nodeType)
             out.prefix = true
             return out
@@ -1126,7 +1135,7 @@ const convert = (cursor, children) => {
             return out
         }
         case 'for_in_statement': {
-            if (findx_child(children, 'operator', cursor.nodeType) === 'of') {
+            if (findx_child(children, 'operator', cursor.nodeType).text === 'of') {
                 out.await = find_child(children, 'await') != null
                 out.type = 'ForOfStatement'
             }
@@ -1235,7 +1244,7 @@ const convert = (cursor, children) => {
             }
         }
         default: {
-            //console.log('defaulting', cursor.nodeType)
+            //            console.log('defaulting', cursor.nodeType)
             // TODO probably enumerate which ones we expect to hit here
             return apply_children(out, non_symbol_children(children))
         }
