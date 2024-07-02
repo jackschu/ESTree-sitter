@@ -1032,20 +1032,24 @@ const convert = (cursor, children) => {
 
             const is_big_int = out.raw.endsWith('n')
 
+            let prefix_len
             let base
             if (out.raw.startsWith('0b') || out.raw.startsWith('0B')) {
+                prefix_len = 2
                 base = 2
             } else if (out.raw.startsWith('0x') || out.raw.startsWith('0X')) {
+                prefix_len = 2
                 base = 16
             } else if (out.raw.startsWith('0.') || out.raw.startsWith('.')) {
+                prefix_len = 0
                 base = 10
+            } else if (out.raw.startsWith('0o') || out.raw.startsWith('0O')) {
+                prefix_len = 2
+                base = 8
             } else if (out.raw.startsWith('0')) {
-                if (
-                    out.raw.includes('8') ||
-                    out.raw.includes('9') ||
-                    text === '0' ||
-                    text === '0n'
-                ) {
+                const is_zero = text === '0' || text === '0n'
+                prefix_len = is_zero ? 0 : 1
+                if (out.raw.includes('8') || out.raw.includes('9') || is_zero) {
                     base = 10
                 } else {
                     base = 8
@@ -1056,13 +1060,13 @@ const convert = (cursor, children) => {
 
             if (base == 10) {
                 if (is_big_int) {
-                    out.value = BigInt(text.slice(0, -1))
+                    out.value = BigInt(text.slice(prefix_len, -1))
                     out.bigint = out.raw.slice(0, -1)
                 } else {
-                    out.value = Number(text)
+                    out.value = Number(text.slice(prefix_len))
                 }
             } else {
-                out.value = parseInt(text, base)
+                out.value = parseInt(text.slice(prefix_len), base)
             }
 
             return out
