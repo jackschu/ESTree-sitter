@@ -158,7 +158,21 @@ const shorthand_to_property = (id) => ({
 const useless_children = new Set()
 useless_children.add('regex')
 
-const symbol_children = new Set(['{', ',', '}', '(', ')', ':', '?', '${', '...', ';', '[', ']'])
+const symbol_children = new Set([
+    '{',
+    ',',
+    '}',
+    '(',
+    ')',
+    ':',
+    '?',
+    '${',
+    '...',
+    ';',
+    '[',
+    ']',
+    '*',
+])
 
 /**
  * @template T
@@ -830,7 +844,7 @@ const convert = (cursor, children) => {
             const maybe_prefix = cursor.currentNode.children[0]
 
             const child_types = children.map((x) => x[0])
-            if (child_types.includes('get')) {
+            if (child_types.includes('get') || child_types.includes('static get')) {
                 out.kind = 'get'
             } else if (child_types.includes('set')) {
                 out.kind = 'set'
@@ -838,7 +852,7 @@ const convert = (cursor, children) => {
                 out.kind = 'method'
             } // TODO: constructor kind
 
-            out.static = child_types.includes('static')
+            out.static = child_types.includes('static') || child_types.includes('static get')
             let key_child = findx_child(children, 'name', 'method_definition')
             if (key_child.computed) {
                 out.computed = true
@@ -854,7 +868,7 @@ const convert = (cursor, children) => {
                 body,
                 expression: false,
                 id: null,
-                generator: false,
+                generator: child_types.includes('*'),
                 params: params.children.map((x) => x[1]),
                 async: child_types.includes('async'),
                 key: body.key,
