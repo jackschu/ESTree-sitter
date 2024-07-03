@@ -366,14 +366,19 @@ const convert = (cursor, children) => {
                     value = function_expression_to_declaration(value)
                 }
                 out.declaration = value
-            } else if (find_child(children, 'export_clause')) {
+            } else {
                 out.type = 'ExportNamedDeclaration'
                 out.declaration = null
                 const source = find_child(children, 'source')
                 out.source = source ?? null
 
-                const clause = findx_child(children, 'export_clause')
-                out.specifiers = clause.children.map((x) => x[1])
+                const clause = find_child(children, 'export_clause')
+                if (clause) {
+                    out.specifiers = clause.children.map((x) => x[1])
+                } else {
+                    out.specifiers = []
+                    out.declaration = findx_child(children, 'declaration', cursor.nodeType)
+                }
             }
 
             return out
