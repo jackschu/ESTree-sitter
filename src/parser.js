@@ -205,9 +205,9 @@ function annotate_script_directives(body) {
     for (let elem of body) {
         if (elem.type !== 'ExpressionStatement') return
         const expression = elem.expression
-        if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
+        if (expression.type !== 'Literal' || typeof expression.raw !== 'string') return
 
-        elem.directive = expression.value
+        elem.directive = expression.raw.slice(1, -1)
     }
 }
 
@@ -220,9 +220,9 @@ function annotate_function_directives(body) {
     for (let elem of statements) {
         if (elem.type !== 'ExpressionStatement') return
         const expression = elem.expression
-        if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
+        if (expression.type !== 'Literal' || typeof expression.raw !== 'string') return
 
-        elem.directive = expression.value
+        elem.directive = expression.raw.slice(1, -1)
     }
 }
 
@@ -1082,7 +1082,7 @@ const convert = (cursor, children) => {
         }
         case 'string': {
             out.raw = cursor.nodeText
-            out.value = cursor.nodeText.slice(1, -1)
+            out.value = unraw(cursor.nodeText.slice(1, -1))
             return out
         }
         case 'number': {
