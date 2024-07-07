@@ -200,8 +200,23 @@ function findx_child(children, name, parent_name) {
 /**
  * @param {(Statement|ModuleDeclaration)[]} body
  */
-function annotate_directives(body) {
+function annotate_script_directives(body) {
     for (let elem of body) {
+        if (elem.type !== 'ExpressionStatement') return
+        const expression = elem.expression
+        if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
+
+        elem.directive = expression.value
+    }
+}
+
+/**
+ * @param {(BlockStatement|Expression)} body
+ */
+function annotate_function_directives(body) {
+    if (body.type !== 'BlockStatement') return
+    const statements = body.body
+    for (let elem of statements) {
         if (elem.type !== 'ExpressionStatement') return
         const expression = elem.expression
         if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
@@ -832,6 +847,8 @@ const convert = (cursor, children) => {
                 (x) => x[1]
             )
             out.body = findx_child(children, 'body', cursor.nodeType)
+            annotate_function_directives(out.body)
+
             out.generator =
                 cursor.nodeType === 'generator_function' ||
                 cursor.nodeType === 'generator_function_declaration'
@@ -1125,7 +1142,7 @@ const convert = (cursor, children) => {
         }
         case 'program': {
             out.body = children.map((x) => x[1])
-            annotate_directives(out.body)
+            annotate_script_directives(out.body)
             return out
         }
         case 'do_statement': {
