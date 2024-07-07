@@ -1128,6 +1128,11 @@ const convert = (cursor, children) => {
             annotate_directives(out.body)
             return out
         }
+        case 'do_statement': {
+            out.body = findx_child(children, 'body', cursor.nodeType)
+            out.test = findx_child(children, 'condition', cursor.nodeType)
+            return out
+        }
         case 'for_statement': {
             out.init = findx_child(children, 'initializer', cursor.nodeType)
             if (out.init.type === 'EmptyStatement') out.init = null
