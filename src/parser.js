@@ -1121,13 +1121,11 @@ const convert = (cursor, children) => {
                 base = 10
             }
 
-            if (base == 10) {
-                if (is_big_int) {
-                    out.value = BigInt(text.slice(prefix_len, -1))
-                    out.bigint = out.raw.slice(0, -1)
-                } else {
-                    out.value = Number(text.slice(prefix_len))
-                }
+            if (is_big_int) {
+                out.value = BigInt(text.slice(0, -1))
+                out.bigint = text.slice(0, -1)
+            } else if (base == 10) {
+                out.value = Number(text.slice(prefix_len))
             } else {
                 out.value = parseInt(text.slice(prefix_len), base)
             }
