@@ -1082,7 +1082,10 @@ const convert = (cursor, children) => {
         }
         case 'string': {
             out.raw = cursor.nodeText
-            out.value = unraw(cursor.nodeText.slice(1, -1))
+            // escaping newline characters should be removed (including the slash)
+            const regex = /\\\n/gi
+            const inner = cursor.nodeText.replaceAll(regex, '').slice(1, -1)
+            out.value = unraw(inner)
             return out
         }
         case 'number': {
