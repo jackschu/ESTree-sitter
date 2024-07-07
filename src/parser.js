@@ -1259,6 +1259,7 @@ const convert = (cursor, children) => {
 
             return out
         }
+        case 'continue_statement':
         case 'break_statement': {
             out.label = find_child(children, 'label') ?? null
 
