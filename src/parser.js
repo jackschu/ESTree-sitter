@@ -598,7 +598,6 @@ const convert = (cursor, children) => {
 
         case 'template_string': {
             // yeah this is pretty ugly, deserves a refactor
-            let was_string = true
             let is_empty = true
             const todo_quasis = []
             let staging_quasis = []
@@ -607,34 +606,32 @@ const convert = (cursor, children) => {
                 const child = children[i]
                 is_empty &&= child[0] === '`'
                 const is_expr = child[0] === 'template_substitution'
-                if (was_string && (is_expr || child[0] === '`')) {
+                if (is_expr || child[0] === '`') {
                     if (staging_quasis.length) {
                         todo_quasis.push(staging_quasis)
+                    } else if (i !== 0) {
+                        const start = child[1].start
+                        todo_quasis.push([
+                            [
+                                'string_fragment',
+                                {
+                                    start,
+                                    end: start,
+                                    loc: { start: child[1].loc.start, end: child[1].loc.start },
+                                    range: [start, start],
+                                    text: '',
+                                },
+                            ],
+                        ])
                     }
                     staging_quasis = []
                 }
-                if ((!was_string || is_empty) && child[0] === '`' && i !== 0) {
-                    const start = child[1].start
-                    todo_quasis.push([
-                        [
-                            'string_fragment',
-                            {
-                                start,
-                                end: start,
-                                loc: { start: child[1].loc.start, end: child[1].loc.start },
-                                range: [start, start],
-                                text: '',
-                            },
-                        ],
-                    ])
-                }
+
                 if (is_expr) {
                     out.expressions.push(child[1].child)
                 } else if (child[0] !== '`') {
                     staging_quasis.push(child)
                 }
-
-                was_string = !is_expr
             }
 
             out.quasis = todo_quasis.map((incoming) => {
