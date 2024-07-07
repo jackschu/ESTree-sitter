@@ -469,6 +469,12 @@ const convert = (cursor, children) => {
             if (is_logical) out.type = 'LogicalExpression'
             return out
         }
+        case 'augmented_assignment_expression': {
+            out.left = findx_child(children, 'left', cursor.nodeType)
+            out.right = findx_child(children, 'right', cursor.nodeType)
+            out.operator = findx_child(children, 'operator', cursor.nodeType).text
+            return out
+        }
         case 'assignment_expression': {
             out.left = findx_child(children, 'left', 'assigment_expression')
             out.right = findx_child(children, 'right', 'assigment_expression')
