@@ -1278,6 +1278,11 @@ const convert = (cursor, children) => {
             out.body = non_symbol_children(children).find((x) => x[0] !== 'else')[1]
             return out
         }
+        case 'throw_statement': {
+            out.argument = non_symbol_children(children).find((x) => x[0] !== 'throw')[1]
+
+            return out
+        }
         case 'return_statement': {
             const child_candidates = non_symbol_children(children)
                 .filter((x) => x[0] !== 'return')
