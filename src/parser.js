@@ -168,6 +168,7 @@ const symbol_children = new Set([
     '?',
     '${',
     '...',
+    '.',
     ';',
     '[',
     ']',
@@ -911,6 +912,20 @@ const convert = (cursor, children) => {
                 return fake_property
             }
 
+            return out
+        }
+        case 'meta_property': {
+            const [first, second] = non_symbol_children(children)
+            first[1].name = first[1].type.toLowerCase()
+            first[1].type = 'Identifier'
+            second[1].name = second[1].type.toLowerCase()
+            second[1].type = 'Identifier'
+            if (first[0] === 'import' || first[0] === 'new') {
+                out.meta = first[1]
+                out.property = second[1]
+            } else {
+                throw new Error(`Found new (?) meta property starting with ${first_child}`)
+            }
             return out
         }
         case 'jsx_element': {
