@@ -1253,8 +1253,11 @@ const convert = (cursor, children) => {
         case 'switch_case':
         case 'switch_default': {
             out.test = find_child(children, 'value') ?? null
-            const body = find_child(children, 'body', cursor.nodeType)
-            out.consequent = body ? [body] : []
+            const bodies = non_symbol_children(children)
+                .filter((x) => x[0] === 'body')
+                .map((x) => x[1])
+
+            out.consequent = bodies
 
             return out
         }
