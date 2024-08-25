@@ -934,16 +934,6 @@ const convert = (cursor, children) => {
             }
             return out
         }
-        case 'jsx_element': {
-            out.openingElement = findx_child(children, 'open_tag', cursor.nodeType)
-            out.children = non_symbol_children(children)
-                .filter((x) => x[0] !== 'open_tag' && x[0] !== 'close_tag')
-                .map((x) => x[1])
-            out.closingElement = findx_child(children, 'close_tag', cursor.nodeType)
-            out.openingElement.selfClosing = false
-
-            return out
-        }
         case 'jsx_attribute': {
             out.value = null
             for (let child of non_symbol_children(children)) {
@@ -1004,17 +994,47 @@ const convert = (cursor, children) => {
 
             return out
         }
-        case 'jsx_opening_element': {
-            out.name = find_child(children, 'name')
-            out = adjust_jsx_name(out)
-
-            out.attributes = children.filter((x) => x[0] === 'attribute').map((x) => x[1])
+        case 'jsx_element': {
+            const opening = findx_child(children, 'open_tag', cursor.nodeType)
+            const closing = findx_child(children, 'close_tag', cursor.nodeType)
+            if (opening.type === 'JSXOpeningFragment') {
+                out.openingFragment = opening
+                out.closingFragment = closing
+                // not technically in the spec, but acorn produces it
+                out.openingFragment.selfClosing = false
+                out.type = 'JSXFragment'
+            } else {
+                out.openingElement = opening
+                out.closingElement = closing
+                out.openingElement.selfClosing = false
+            }
+            out.children = non_symbol_children(children)
+                .filter((x) => x[0] !== 'open_tag' && x[0] !== 'close_tag')
+                .map((x) => x[1])
 
             return out
         }
+        case 'jsx_opening_element': {
+            const name = find_child(children, 'name')
+            if (name) {
+                out.name = name
+                out = adjust_jsx_name(out)
+                out.attributes = children.filter((x) => x[0] === 'attribute').map((x) => x[1])
+            } else {
+                out.type = 'JSXOpeningFragment'
+                // not technically in the spec, but acorn produces it
+                out.attributes = []
+            }
+            return out
+        }
         case 'jsx_closing_element': {
-            out.name = find_child(children, 'name')
-            out = adjust_jsx_name(out)
+            const name = find_child(children, 'name')
+            if (name) {
+                out.name = find_child(children, 'name')
+                out = adjust_jsx_name(out)
+            } else {
+                out.type = 'JSXClosingFragment'
+            }
             return out
         }
         case 'jsx_namespace_name': {
