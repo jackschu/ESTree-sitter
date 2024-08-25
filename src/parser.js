@@ -321,23 +321,26 @@ const function_expression_to_declaration = (expression) => {
  * @param {unknown[]} children
  */
 const convert = (cursor, children) => {
+    let out
     // the estee mob would like us to have our ranges avoid comment children
     // in strangely specific scenarios
     const ts_children = cursor.currentNode.children
     let avoid_comment_child = null
-    if (cursor.nodeType !== 'program') {
-        for (let i = ts_children.length - 1; i >= 0; i--) {
-            if (ts_children[i].type !== 'comment') {
-                if (i !== ts_children.length - 1) avoid_comment_child = ts_children[i]
-                break
-            }
+    for (let i = ts_children.length - 1; i >= 0; i--) {
+        if (ts_children[i].type !== 'comment') {
+            if (i !== ts_children.length - 1) avoid_comment_child = ts_children[i]
+            break
         }
     }
 
-    let out = cursor.nodeType === 'program' ? program_cursor_to_loc(cursor) : cursor_to_loc(cursor)
-
-    if (avoid_comment_child) {
-        out = merge_position(out, cursor_to_loc(avoid_comment_child))
+    if (cursor.nodeType === 'program') {
+        out = program_cursor_to_loc(cursor)
+    } else if (avoid_comment_child) {
+        out = merge_position(cursor_to_loc(cursor), cursor_to_loc(avoid_comment_child))
+    } else if (children.length) {
+        out = merge_position(cursor_to_loc(cursor), children.at(-1)[1])
+    } else {
+        out = cursor_to_loc(cursor)
     }
 
     if (cursor.currentFieldName === 'operator') {
