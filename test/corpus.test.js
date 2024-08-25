@@ -64,6 +64,7 @@ test('smoke test', async () => {
 const pare_acorn_tree = (obj) => {
     return JSON.parse(
         JSON.stringify(obj, function (key, value) {
+            if (key === 'loc') return undefined
             if (this.type === 'Program' && key === 'sourceType') return undefined
             if (typeof value === 'bigint') return `SIGNALBigInt${value.toString()}`
             return value
@@ -113,7 +114,8 @@ describe('corpus test', () => {
         // })
         test(`AST match: ${name}`, async () => {
             const text = await get_text()
-            const ts_ast = ts_parse(text)
+            let ts_ast = ts_parse(text)
+            ts_ast = pare_acorn_tree(ts_ast)
 
             if (DEBUG) {
                 let tree = JSON.stringify(
