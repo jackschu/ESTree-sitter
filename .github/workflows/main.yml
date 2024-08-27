@@ -19,6 +19,7 @@ jobs:
             - uses: DeterminateSystems/magic-nix-cache-action@v7
               with: 
                 use-flakehub: false
+                diff-store: true
                 diagnostic-endpoint: ""
 
             - name: Nix flake check
