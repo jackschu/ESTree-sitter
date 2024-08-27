@@ -16,11 +16,13 @@ jobs:
 
             - name: Install Nix
               uses: cachix/install-nix-action@v27
-            - uses: DeterminateSystems/magic-nix-cache-action@v7
-              with: 
-                use-flakehub: false
-                diff-store: true
-                diagnostic-endpoint: ""
+            # For now this is too unstable 
+            # probably needs https://github.com/DeterminateSystems/magic-nix-cache/issues/79
+            # - uses: DeterminateSystems/magic-nix-cache-action@v7
+            #   with: 
+            #     use-flakehub: false
+            #     diff-store: true
+            #     diagnostic-endpoint: ""
 
             - name: Nix flake check
               run: nix flake check
