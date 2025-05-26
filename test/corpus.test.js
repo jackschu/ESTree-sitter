@@ -65,6 +65,8 @@ const pare_acorn_tree = (obj) => {
     return JSON.parse(
         JSON.stringify(obj, function (key, value) {
             if (key === 'loc') return undefined
+            if (key === 'attributes') return undefined
+            if (key === 'options') return undefined
             if (this.type === 'Program' && key === 'sourceType') return undefined
             if (typeof value === 'bigint') return `SIGNALBigInt${value.toString()}`
             return value
