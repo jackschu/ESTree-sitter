@@ -16,6 +16,6 @@
     "prettier": "^3.2.5"
   },
   "dependencies": {
-    "web-tree-sitter": "^0.22.5"
+    "web-tree-sitter": "^0.25.4"
   }
 }

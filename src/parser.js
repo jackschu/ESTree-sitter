@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
-import Parser from 'web-tree-sitter'
+import { Parser, Language } from 'web-tree-sitter'
 import { type_mapping, field_map } from './renames'
 
 const THROW_ON_ERROR = true
 
 await Parser.init()
-const JavaScript = await Parser.Language.load('./vendored/tree-sitter-javascript.wasm')
+const JavaScript = await Language.load('./vendored/tree-sitter-javascript.wasm')
 
 const parser = new Parser()
 
