@@ -3,6 +3,7 @@ import { Parser, Language } from 'web-tree-sitter'
 import { type_mapping, field_map } from './renames'
 
 const THROW_ON_ERROR = true
+const THROW_ON_MISSING = true
 
 await Parser.init()
 const JavaScript = await Language.load('./vendored/tree-sitter-javascript.wasm')
@@ -32,6 +33,14 @@ export const parse = (text) => {
 
 /** @param {Parser.TreeCursor} cursor */
 const traverse_tree = (cursor) => {
+    if (THROW_ON_MISSING && cursor.nodeIsMissing) {
+        cursor.gotoParent()
+        throw new Error(
+            `Encoutered missing required symbol while parsing text: ${
+                cursor.nodeText
+            }) s-expression: ${cursor.currentNode.toString()}`
+        )
+    }
     const children = []
 
     let out
