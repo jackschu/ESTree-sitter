@@ -880,18 +880,19 @@ const convert = (cursor, children) => {
         }
         case 'method_definition': {
             const maybe_prefix = cursor.currentNode.children[0]
-
             const child_types = children.map((x) => x[0])
+            let key_child = findx_child(children, 'name', 'method_definition')
             if (child_types.includes('get') || child_types.includes('static get')) {
                 out.kind = 'get'
             } else if (child_types.includes('set')) {
                 out.kind = 'set'
+            } else if (key_child.name === 'constructor') {
+                out.kind = 'constructor'
             } else {
                 out.kind = 'method'
-            } // TODO: constructor kind
+            }
 
             out.static = child_types.includes('static') || child_types.includes('static get')
-            let key_child = findx_child(children, 'name', 'method_definition')
             if (key_child.computed) {
                 out.computed = true
                 key_child = key_child.child
