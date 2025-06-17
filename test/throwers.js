@@ -218,4 +218,5 @@ export const should_throw = [
     'top-level-super_example.js',
     'invalid_null-arguments-item.js',
     'newline-before-arrow_newline-before-arrow.js',
+    'export-default_export-default-from_export', // this is export 'from' syntax failing in non-babel
 ]
