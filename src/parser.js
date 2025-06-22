@@ -1146,7 +1146,7 @@ const convert = (cursor, children) => {
                 prefix_len = 2
                 base = 8
             } else if (out.raw.startsWith('0')) {
-                const is_zero = text === '0' || text === '0n'
+                const is_zero = text === '0' || text === '0n' || out.raw.startsWith('0e')
                 prefix_len = is_zero ? 0 : 1
                 if (out.raw.includes('8') || out.raw.includes('9') || is_zero) {
                     base = 10
