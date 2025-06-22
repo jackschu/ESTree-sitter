@@ -18,3 +18,7 @@ As a result, other ESTree-based tools like [prettier](https://prettier.io/) coul
 Dont! This project is WIP and as of this commit (06-18-24) only passes 60% of prettier's js test corpus. 
 
 It's not even on a package manager yet AFAIK, how are you here?
+
+## Known Limitations
+
+- This layer does not attach a sourceType attribute at all, even though it is described by the [spec](https://github.com/estree/estree/blob/master/es2015.md#programs).

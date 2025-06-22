@@ -214,7 +214,7 @@ function annotate_script_directives(body) {
     for (let elem of body) {
         if (elem.type !== 'ExpressionStatement') return
         const expression = elem.expression
-        if (expression.type !== 'Literal' || typeof expression.raw !== 'string') return
+        if (expression.type !== 'Literal' || typeof expression.value !== 'string') return
 
         elem.directive = expression.raw.slice(1, -1)
     }
@@ -1355,10 +1355,19 @@ const convert = (cursor, children) => {
 }
 
 // https://stackoverflow.com/questions/57330203/unraw-a-string-in-javascript
+/** @param {string} str */
 function unraw(str) {
     return str.replace(
-        /\\[0-9]|\\['"\bfnrtv]|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}|\\u\{[0-9a-f]+\}|\\./gi,
-        (match) => {
+        /\\(?<octal>[0-7]{1,3})|\\['"\bfnrtv]|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}|\\u\{[0-9a-f]+\}|\\./gi,
+        (...args) => {
+            const match = args[0]
+            const octal = args.at(-1).octal
+            if (octal !== undefined) {
+                const value = parseInt(octal, 8)
+                if (value <= 255) {
+                    return String.fromCharCode(value)
+                }
+            }
             switch (match[1]) {
                 case "'":
                 case '"':
@@ -1383,8 +1392,6 @@ function unraw(str) {
                     return String.fromCharCode(parseInt(match.substring(2), 16))
                 case 'x':
                     return String.fromCharCode(parseInt(match.substring(2), 16))
-                case '0':
-                    return '\0'
                 default: // E.g., "\q" === "q"
                     return match.substring(1)
             }
