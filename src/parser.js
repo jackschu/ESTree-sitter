@@ -1116,7 +1116,8 @@ const convert = (cursor, children) => {
         case 'string': {
             out.raw = cursor.nodeText
             // escaping newline characters should be removed (including the slash)
-            const regex = /\\\n/gi
+            // or else '\<newline>' won't work
+            const regex = /\\[\n\u2029\u2028]/gi
             const inner = cursor.nodeText.replaceAll(regex, '').slice(1, -1)
             out.value = unraw(inner)
             return out
